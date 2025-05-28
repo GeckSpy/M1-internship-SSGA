@@ -335,7 +335,6 @@ def plot_img_with_borders(img:np.ndarray, SP:Superpixel, color=[255,0,0,150]):
     
 
 
-
 def example():
     """
     Example of usage of entropy rate superpixel implementation
