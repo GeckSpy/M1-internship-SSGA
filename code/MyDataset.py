@@ -1,3 +1,4 @@
+import numpy as np
 import scipy.io
 import json
 
@@ -16,6 +17,13 @@ def classes(gt, dic:dict):
 
 
 
+def normalized_data(data:np.ndarray):
+    N,M,B = data.shape
+    res = np.zeros(data.shape)
+    for b in range(B):
+        img = data[:,:,b]
+        res[:,:,b] = (img - img.min())/(img.max()-img.min())
+    return res
 
 def load_dataset(path:str, data_class, name, data_key=None, gt_key=None, gt_path=None):
     if gt_path==None:
@@ -34,7 +42,7 @@ def load_dataset(path:str, data_class, name, data_key=None, gt_key=None, gt_path
         "name": name,
         "shape": data.shape,
         "gt": gt,
-        "data": data,
+        "data": normalized_data(data),
         "class": classes(gt, data_class)
     }
 
@@ -72,6 +80,7 @@ IP_class = {0:"Vegetation",
             16:"Stone-Steel-Towers"
 }
 IndianPines = load_dataset("Indian_pines_corrected", IP_class, "Indian Pines", gt_path="Indian_pines_gt")
+#IndianPines["data"] = IndianPines["data"][:,:,1:]
 #save_dataset("indian_pines", IndianPines)
 
 ### Paavia University
