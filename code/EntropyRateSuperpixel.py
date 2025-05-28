@@ -303,23 +303,37 @@ def find_borders(L:Superpixel,
     return borders
 
 
-def create_img_with_borders(img: np.ndarray,
+def create_overlay_borders(img: np.ndarray,
                             SP: Superpixel,
-                            color=[255,0,0]):
+                            color=[255,0,0,150]):
+    """
+    Create an overaly image containing the borders of superpixels
+    """
+    if(len(color)==3):
+        color = color + [1]
+
     if(len(img.shape))==2:
         color = 0
         n,m = img.shape
     else:
-        n,m,k = img.shape
+        n,m,_ = img.shape
 
     borders = find_borders(SP, (n,m))
-    if len(img.shape)>2 and k>3:
-        img = np.array( [[y[:3] for y in x] for x in img] )
-    img_res = img.copy()
+    overlay = np.zeros((n,m, 4), dtype=int)
     for border in borders:
         for x,y in border:
-            img_res[x,y] = color
-    return img_res
+            overlay[x,y] = color
+    return overlay
+
+
+def plot_img_with_borders(img:np.ndarray, SP:Superpixel, color=[255,0,0,150]):
+    """
+    plot the given image with the superpixels' borders overlay
+    """
+    plt.imshow(img)
+    plt.imshow(create_overlay_borders(img, SP, color=color))
+    
+
 
 
 def example():
@@ -330,13 +344,11 @@ def example():
     #plt.imshow([[np.average(y) for y in x] for x in img], cmap='gray')
     plt.imshow(img)
     plt.show()
-    n,m,_ = img.shape
 
     use_function = complete_basic_similarity
     res = find_superpixel(img, 100, 8*0.5, use_function, True)
 
-    bordered_img = create_img_with_borders(img, res)
-    plt.imshow(bordered_img)
+    plot_img_with_borders(img, res, color = [255,0,0, 180])
     plt.show()
 
 #example()
