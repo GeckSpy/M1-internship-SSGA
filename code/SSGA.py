@@ -3,7 +3,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from EntropyRateSuperpixel import find_superpixel, complete_basic_similarity, create_img_with_borders, Superpixel
+from EntropyRateSuperpixel import find_superpixel, complete_basic_similarity, Superpixel
 
 
 ### Genetic operations
@@ -212,15 +212,8 @@ def SSGA(data:np.ndarray, b:int, K:int, NG:int, NP:int, Pc:float, Pm1:float, Pm2
     _,_,B = data.shape
     # Compute SuperPixxels and their mean vectors
     if SP==None:
-        SP = find_superpixel(data, K, 0.5*8, complete_basic_similarity, True)
-    bordered_img = create_img_with_borders(data, SP)
+        SP = find_superpixel(data, K, 0.5*8, complete_basic_similarity, True)    
     Sbsp_list, Stsp_list = compute_Sbsp_Stsp_list(data, SP)
-
-    if show_plots:
-        plt.imshow(bordered_img)
-        print(len(SP), "superpixels of size:")
-        print([len(sp) for sp in SP])
-        plt.show()
 
     # Initialisation of genetic algorithm
     pop = create_population(B, b, NP)

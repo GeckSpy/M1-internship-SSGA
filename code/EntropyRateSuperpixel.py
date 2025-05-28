@@ -313,7 +313,6 @@ def create_overlay_borders(img: np.ndarray,
         color = color + [1]
 
     if(len(img.shape))==2:
-        color = 0
         n,m = img.shape
     else:
         n,m,_ = img.shape
