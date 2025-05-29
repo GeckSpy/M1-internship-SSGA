@@ -18,7 +18,18 @@ def basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     return coef * np.abs(np.average(px) - np.average(py))
 
 
-def average_guassian_similarity(px: np.ndarray,
+def norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+    """
+    The original similarity function used
+    - px, py define two spectral vector
+    - is_diagonal: false if px and py are side by side
+    """
+    coef=np.sqrt(2) if is_diagonal else 1
+    return coef * ((px-py)**2).sum()
+
+
+
+def guassian_similarity(px: np.ndarray,
                                 py: np.ndarray,
                                 sigma: float,
                                 is_diagonal: bool, 
@@ -34,7 +45,12 @@ def complete_basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->f
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    return average_guassian_similarity(px,py,1, is_diagonal, basic_similarity)
+    return guassian_similarity(px,py,1, is_diagonal, basic_similarity)
+
+
+def complete_norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+    return guassian_similarity(px,py,1, is_diagonal, norm_similarity)
+
 
 
 ### Build edges, loops and weight
@@ -340,11 +356,14 @@ def example():
     """
     img = plt.imread("images/sun_umbrella.jpg")
     #plt.imshow([[np.average(y) for y in x] for x in img], cmap='gray')
-    plt.imshow(img)
-    plt.show()
+    #plt.imshow(img)
+    #plt.show()
 
     use_function = complete_basic_similarity
     res = find_superpixel(img, 100, 8*0.5, use_function, True)
+    l = [len(l) for l in res]
+    print(l)
+    print(np.sum(l))
 
     plot_img_with_borders(img, res, color = [255,0,0, 180])
     plt.show()
