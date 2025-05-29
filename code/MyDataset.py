@@ -4,7 +4,12 @@ import json
 
 datasets_folder = "datasets/"
 
-def classes(gt, dic:dict):
+def classes(gt:np.ndarray,
+            dic:dict[int, str]
+            ) -> dict[int, tuple[str, list[tuple[int,int]]]]:
+    """
+    Return the list of pixels indices corresponding to each classes
+    """
     res = {}
     for key,value in dic.items():
         res[key] = [value, []]
@@ -17,7 +22,10 @@ def classes(gt, dic:dict):
 
 
 
-def normalized_data(data:np.ndarray):
+def normalized_data(data:np.ndarray) -> np.ndarray:
+    """
+    Normalize the data
+    """
     N,M,B = data.shape
     res = np.zeros(data.shape)
     for b in range(B):
@@ -25,15 +33,23 @@ def normalized_data(data:np.ndarray):
         res[:,:,b] = (img - img.min())/(img.max()-img.min())
     return res
 
-def load_dataset(path:str, data_class, name, data_key=None, gt_key=None, gt_path=None):
+
+
+def load_dataset(path :str,
+                 data_class: dict[int, str],
+                 name :str,
+                 data_key :str=None,
+                 gt_key :str=None,
+                 gt_path :str=None):
+    """
+    Return the dataset in my format
+    """
     if gt_path==None:
         gt_path = path + "_gt"
     if data_key==None:
         data_key = path[0].lower() + path[1:]
     if gt_key==None:
         gt_key = gt_path[0].lower() + gt_path[1:]
-
-
 
     data = scipy.io.loadmat(datasets_folder + path +".mat")[data_key]
     gt = scipy.io.loadmat(datasets_folder + gt_path + ".mat")[gt_key]
@@ -45,13 +61,12 @@ def load_dataset(path:str, data_class, name, data_key=None, gt_key=None, gt_path
         "data": normalized_data(data),
         "class": classes(gt, data_class)
     }
-
     return dataset
 
 
 
 
-def save_dataset(name, dic:dict):
+def save_dataset(name:str, dic:dict):
     dic_to_save = dic.copy()
     dic_to_save["gt"] = dic["gt"].tolist()
     dic_to_save["data"] = dic["data"].tolist()
@@ -83,7 +98,8 @@ IndianPines = load_dataset("Indian_pines_corrected", IP_class, "Indian Pines", g
 #IndianPines["data"] = IndianPines["data"][:,:,1:]
 #save_dataset("indian_pines", IndianPines)
 
-### Paavia University
+
+### Pavia University
 PU_class = {0:"No information",
             1:"Asphalt", 
             2:"Meadows",
@@ -98,4 +114,5 @@ PU_class = {0:"No information",
 PaviaUniversity = load_dataset("PaviaU", PU_class, "Pavia University")
 
 
+### Pavia Center
 PaviaCenter = load_dataset("Pavia", PU_class, "Pavia Center")
