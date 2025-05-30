@@ -63,12 +63,14 @@ def load_dataset(path :str,
     data = scipy.io.loadmat(datasets_folder + path +".mat")[data_key]
     gt = scipy.io.loadmat(datasets_folder + gt_path + ".mat")[gt_key]
 
+    data_classes = classes(gt, data_class)
     dataset = {
         "name": name,
         "shape": data.shape,
         "gt": gt,
-        "data": normalized_data(data),
-        "class": classes(gt, data_class)
+        "data": data,#normalized_data(data),
+        "class": data_classes,
+        "labels": [i for i in data_classes.keys() if i!=0]
     }
     return dataset
 
