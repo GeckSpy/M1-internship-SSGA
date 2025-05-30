@@ -67,7 +67,7 @@ def load_dataset(path :str,
         "name": name,
         "shape": data.shape,
         "gt": gt,
-        "data": data,#normalized_data(data),
+        "data": normalized_data(data),
         "class": classes(gt, data_class)
     }
     return dataset

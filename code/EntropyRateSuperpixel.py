@@ -8,14 +8,16 @@ from typing import Callable
 
 
 ### Similarity functions
+def basic_dist(is_diagonal:bool):
+    return 1/np.sqrt(2) if is_diagonal else 1
+
 def basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     """
     The original similarity function used
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    coef=np.sqrt(2) if is_diagonal else 1
-    return coef * np.abs(np.average(px) - np.average(py))
+    return basic_dist(is_diagonal) * np.abs(np.average(px) - np.average(py))
 
 
 def norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
@@ -24,8 +26,8 @@ def norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    coef=np.sqrt(2) if is_diagonal else 1
-    return coef * ((px-py)**2).sum()
+    return basic_dist(is_diagonal) * ((px-py)**2).sum()
+
 
 
 def guassian_similarity(
@@ -53,7 +55,7 @@ def complete_basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->f
 
 def complete_norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     return guassian_similarity(px,py,1, is_diagonal, norm_similarity)#/len(px)
-
+    
 
 
 
