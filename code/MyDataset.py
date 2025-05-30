@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.io
 import json
+from sklearn.preprocessing import StandardScaler
 
 datasets_folder = "datasets/"
 
@@ -34,6 +35,14 @@ def normalized_data(data:np.ndarray) -> np.ndarray:
     return res
 
 
+def standardize_data(data:np.ndarray):
+    """
+    Standardize the data
+    """
+    N,M,B = data.shape
+    new_data = data.reshape(N*M, B)
+    return StandardScaler().fit(new_data).transform(new_data).reshape(N,M,B)
+
 
 def load_dataset(path :str,
                  data_class: dict[int, str],
@@ -58,7 +67,7 @@ def load_dataset(path :str,
         "name": name,
         "shape": data.shape,
         "gt": gt,
-        "data": normalized_data(data),
+        "data": data,#normalized_data(data),
         "class": classes(gt, data_class)
     }
     return dataset

@@ -28,7 +28,6 @@ def norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     return coef * ((px-py)**2).sum()
 
 
-
 def guassian_similarity(
         px: np.ndarray,
         py: np.ndarray,
@@ -54,6 +53,7 @@ def complete_basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->f
 
 def complete_norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     return guassian_similarity(px,py,1, is_diagonal, norm_similarity)#/len(px)
+
 
 
 
