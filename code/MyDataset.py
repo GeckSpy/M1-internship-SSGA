@@ -68,7 +68,7 @@ def load_dataset(path :str,
         "name": name,
         "shape": data.shape,
         "gt": gt,
-        "data": data,#normalized_data(data),
+        "data": data,
         "class": data_classes,
         "labels": [i for i in data_classes.keys() if i!=0]
     }
