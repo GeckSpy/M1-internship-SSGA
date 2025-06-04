@@ -35,7 +35,7 @@ def norm_similarity_v2(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    return basic_dist(is_diagonal) * (np.abs(px-py)).sum()/len(px)
+    return basic_dist(is_diagonal) * np.abs(px-py).sum()/len(px)
 
 
 
