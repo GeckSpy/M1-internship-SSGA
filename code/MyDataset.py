@@ -70,7 +70,7 @@ def load_dataset(path :str,
         "gt": gt,
         "data": data,
         "class": data_classes,
-        "labels": [i for i in data_classes.keys() if i!=0]
+        "labels": [i for i in data_classes.keys()]
     }
     return dataset
 
@@ -87,7 +87,7 @@ def save_dataset(name:str, dic:dict):
 
 
 ### Indian Pines
-IP_class = {0:"Vegetation",
+IP_class = {0:"NoInfo",
             1:"Alfalfa",
             2:"Corn-notill",
             3:"Corn-mintill",
@@ -111,7 +111,7 @@ IndianPines = load_dataset("Indian_pines_corrected", IP_class, "Indian Pines", g
 
 
 ### Pavia University
-PU_class = {0:"No information",
+PU_class = {0:"NoInfo",
             1:"Asphalt", 
             2:"Meadows",
             3:"Gravel",
