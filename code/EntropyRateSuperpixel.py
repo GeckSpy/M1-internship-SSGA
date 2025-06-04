@@ -20,18 +20,18 @@ def basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     return basic_dist(is_diagonal) * np.abs(np.average(px) - np.average(py))
 
 
-def norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+def norm2_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     """
-    The original similarity function used
+    The norm2 proposed similarity function
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
     return basic_dist(is_diagonal) * ((px-py)**2).sum()/len(px)
 
 
-def norm_similarity_v2(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+def norm1_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     """
-    The original similarity function used
+    The norm1 proposed similarity function
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
@@ -62,11 +62,11 @@ def complete_basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->f
     return guassian_similarity(px,py,1, is_diagonal, basic_similarity)
 
 
-def complete_norm_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
-    return guassian_similarity(px,py,1, is_diagonal, norm_similarity)
+def complete_norm2_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+    return guassian_similarity(px,py,1, is_diagonal, norm2_similarity)
 
-def complete_norm_similarity_v2(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
-    return guassian_similarity(px,py,1, is_diagonal, norm_similarity_v2)
+def complete_norm1_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+    return guassian_similarity(px,py,1, is_diagonal, norm1_similarity)
 
 
 
