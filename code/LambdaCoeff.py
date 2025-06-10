@@ -7,12 +7,27 @@ from EntropyRateSuperpixel import find_superpixel
 
 ### Minimum Superpixel size
 gamma = 0.15
-def computePs(K, N, M):
+def computePs(K:int, N:int, M:int):
+    """
+    Compute the minimal allowed size for SPS
+
+    - K: number of wanted superpixels
+
+    - N, M: dimension of the image
+    """
     return int(N*M/K * 1/np.log(np.log(N*M/K)) * gamma)
 
 
 ### Find lambda coefficient methdos
-def dichotomies_search(data, K, mini, maxi, similarity_function, Ps, print_info=False):
+def dichotomies_search(data:np.ndarray,
+                       K:int,
+                       mini:int, maxi:int,
+                       similarity_function,
+                       Ps:int,
+                       print_info:bool=False):
+    """
+    Find the best lambda coefficient based on the minimal SP size criteria with a dichotomies search
+    """
     def aux(i,j, SP):
         coeff = int((i+j)/2)
         if print_info:
@@ -32,7 +47,16 @@ def dichotomies_search(data, K, mini, maxi, similarity_function, Ps, print_info=
     return aux(mini, maxi, None)
 
 
-def findByCroping(data, simFun, nbCroping, n, m):
+def findByCroping(data:np.ndarray,
+                  similarity_function,
+                  nbCroping:int,
+                  n:int, m:int,
+                  do_plot:bool=False):
+    """
+    Try to find a good lambda coefficient by taking average of lambda coefficient of cropped part of the image
+
+    - n,m: dimension of the cropped imgs
+    """
     # Didn't performmed well
     N,M,B = data.shape
     sum_lambda = 0
@@ -44,15 +68,14 @@ def findByCroping(data, simFun, nbCroping, n, m):
         xStart = np.random.randint(0, N-1-n)
         yStart = np.random.randint(0, M-1-m)
         trainData = Data.standardize_data(data)[xStart:xStart+n, yStart:yStart+m, :]
-        plt.imshow(trainData[:,:,1])
-        plt.show()
+        if do_plot:
+            plt.imshow(trainData[:,:,1])
+            plt.show()
         Ps = computePs(K, N, M)
-        _, coeff = dichotomies_search(trainData, K, a, b, simFun, Ps, True)
+        _, coeff = dichotomies_search(trainData, K, a, b, similarity_function, Ps, True)
         print(coeff)
         sum_lambda += coeff
-    
     return sum_lambda/nbCroping
-
 
 
 
@@ -82,15 +105,17 @@ models = [model1, model2, model3, model4, model5]
 
 
 def r2_score(z_true, z_pred):
-        ss_res = np.sum((z_true - z_pred) ** 2)
-        ss_tot = np.sum((z_true - np.mean(z_true)) ** 2)
-        return 1 - ss_res / ss_tot
+    """
+    Compute the R² score
+    """
+    ss_res = np.sum((z_true - z_pred) ** 2)
+    ss_tot = np.sum((z_true - np.mean(z_true)) ** 2)
+    return 1 - ss_res / ss_tot
 
 
 
-def find_best_models_parameters(usedSimFun, show_plot=False):
+def find_best_models_parameters(usedSimFun:int, show_plot:bool=False):
     LambdaCoeffs = Data.FoundLambdaCoeff["SimilarityFunction"]
-    
     points = []
     for dataset in [Data.IndianPines, Data.PaviaUniversity]:
         n, m, _ = dataset["data"].shape
@@ -146,18 +171,41 @@ def find_best_models_parameters(usedSimFun, show_plot=False):
 
 
 ### Best models found
-def getLambdaAverage(K,N,M):
+def getLambdaAverage(K:int, N:int, M:int):
+    """
+    Return the lambda coefficient values of the best model for the basic similarity function (when data has been standardize)
+
+    - K: number of wanted Superpixels
+    - N,M: dimension of the image
+    """
     return 0.38 * gamma* K * np.log(N*M*K)**0.668
 
-def getLambdaNorm2(K,N,M):
+
+def getLambdaNorm2(K:int, N:int, M:int):
+    """
+    Return the lambda coefficient values of the best model for the Norm 2 similarity function (when data has been standardize)
+
+    - K: number of wanted Superpixels
+    - N,M: dimension of the image
+    """
     return 1.214 * gamma* K * np.log(N*M*K)**0.444
 
-def getLambdaNorm1(K,N,M):
+
+def getLambdaNorm1(K:int, N:int, M:int):
+    """
+    Return the lambda coefficient values of the best model for the Norm 1 similarity function (when data has been standardize)
+
+    - K: number of wanted Superpixels
+    - N,M: dimension of the image
+    """
     return 0.176* gamma* K * np.log(N*M)**1.147
 
 
 
 def plot_lambda_models_vs_gt():
+    """
+    Plot the lambdas models compared to the found values of lambda
+    """
     LambdaCoeffs = Data.FoundLambdaCoeff["SimilarityFunction"]
     getLambdas = [getLambdaAverage, getLambdaNorm2, getLambdaNorm1]
     names = ["Basic", "(.)²", "|.|"]
@@ -170,7 +218,6 @@ def plot_lambda_models_vs_gt():
         for i in range(len(getLambdas)):
             axs[id].plot(new_Ks, [LambdaCoeffs[dataset["name"]][K][i] for K in new_Ks], "-o", label=names[i], color=colors[i])
             axs[id].plot(new_Ks, [getLambdas[i](K, n, m) for K in new_Ks], "--x", label=names[i]+"'s model", color=colors[i])
-
         axs[id].title.set_text(dataset["name"])
         axs[id].set_xlabel("K")
         axs[id].set_ylabel("Lambda")
