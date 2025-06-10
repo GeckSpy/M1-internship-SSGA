@@ -197,7 +197,10 @@ def next_pop(pop:list[Indiv], B:int, Sbsp_list:np.ndarray, Stsp_list:np.ndarray,
 
 
 # Main function
-def SSGA(data:np.ndarray, b:int, K:int, NG:int, NP:int, Pc:float, Pm1:float, Pm2:float, show_plots=False, SP=None):
+def SSGA(data:np.ndarray,
+         b:int, K:int, NG:int, NP:int, Pc:float, Pm1:float, Pm2:float,
+         SP=None,
+         S_list=None):
     """ 
     - data: set of images
     - b: number of bands to select
@@ -213,7 +216,11 @@ def SSGA(data:np.ndarray, b:int, K:int, NG:int, NP:int, Pc:float, Pm1:float, Pm2
     # Compute SuperPixxels and their mean vectors
     if SP==None:
         SP = find_superpixel(data, K, 0.5*8, complete_basic_similarity, True)    
-    Sbsp_list, Stsp_list = compute_Sbsp_Stsp_list(data, SP)
+    if S_list==None:
+        Sbsp_list, Stsp_list = compute_Sbsp_Stsp_list(data, SP)
+    else:
+        Sbsp_list, Stsp_list = S_list
+
 
     # Initialisation of genetic algorithm
     pop = create_population(B, b, NP)
