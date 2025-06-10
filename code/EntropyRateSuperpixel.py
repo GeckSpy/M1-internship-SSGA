@@ -231,17 +231,22 @@ def easyPartialUpdateTree(heap: MinHeap,
 ### Lazy greedy
 Superpixel = list[list[tuple[int, int]]]
 def find_superpixel(img: np.ndarray,
-                    K: int,
+                    K,
                     lambda_coef: float,
                     similarity_function: Callable[[np.ndarray, np.ndarray, bool], float],
                     opt:bool=True
                     )->Superpixel:
     """
-    - K: number of superpixel to find
+    - K: number of superpixel to find. Can be a list to return multiple SPs selections
     - lambda_coef (=0.5): balancing coefficient
-    - opt (=true: 8-connected graph), (=false: 4-connected graph)
-    - basic value: true
+    - opt (=true: 8-connected graph), (=false: 4-connected graph), default value: true
     """
+    if type(K)==int:
+        K_list = [K]
+    else:
+        K_list = [k for k in K]
+    K_list.sort(key=lambda x:-x)
+
     # Initialisation
     n,m,_ = img.shape
     loops_weight, edges, _ = build_loops_and_edges(img, opt, similarity_function)
@@ -269,28 +274,36 @@ def find_superpixel(img: np.ndarray,
     for i,e in enumerate(edges):
         heap.insert(i, -e.gain)
 
+
+    SPs_list = []
     # Main loop
-    while uf.count>K and not heap.isEmpty():
-        # Find the best edge to add
-        best_edge = edges[heap.pop()[0]]
-        # Add the edge to the graph
-        ru,rv = uf.find(best_edge.u), uf.find(best_edge.v)
-        if ru!=rv:
-            uf.union(ru,rv)
-            loops_weight[best_edge.u] -= best_edge.w
-            loops_weight[best_edge.v] -= best_edge.w
-            easyPartialUpdateTree(heap, uf, edges, loops_weight, n*m, balancing)
+    for K in K_list:
+        while uf.count>K and not heap.isEmpty():
+            # Find the best edge to add
+            best_edge = edges[heap.pop()[0]]
+            # Add the edge to the graph
+            ru,rv = uf.find(best_edge.u), uf.find(best_edge.v)
+            if ru!=rv:
+                uf.union(ru,rv)
+                loops_weight[best_edge.u] -= best_edge.w
+                loops_weight[best_edge.v] -= best_edge.w
+                easyPartialUpdateTree(heap, uf, edges, loops_weight, n*m, balancing)
             
     
-    # Compute pixels in each superpixels
-    superpixel_component = [x for x in uf.component if len(x)>0]
-    superpixels = [[] for _ in range(len(superpixel_component))]
-    for i,superpixel in enumerate(superpixel_component):
-        for j in superpixel:
-            x = j//m
-            y = j%m
-            superpixels[i].append((x,y))
-    return superpixels
+        # Compute pixels in each superpixels
+        superpixel_component = [x for x in uf.component if len(x)>0]
+        superpixels = [[] for _ in range(len(superpixel_component))]
+        for i,superpixel in enumerate(superpixel_component):
+            for j in superpixel:
+                x = j//m
+                y = j%m
+                superpixels[i].append((x,y))
+        SPs_list.append(superpixels)
+
+    if len(K_list)==1:
+        return SPs_list[0]
+    else:
+        return SPs_list
 
 
 
@@ -367,7 +380,7 @@ def plot_img_with_borders(img:np.ndarray, SP:Superpixel, color=[255,0,0,150]):
     
 
 
-def example():
+def example1():
     """
     Example of usage of entropy rate superpixel implementation
     """
@@ -385,4 +398,26 @@ def example():
     plot_img_with_borders(img, res, color = [255,0,0, 180])
     plt.show()
 
-#example()
+
+def example2():
+    """
+    Example of usage of entropy rate superpixel implementation with multiple Ks
+    """
+    img = plt.imread("images/low_flower.png")
+
+    use_function = complete_basic_similarity
+    Ks = [10, 20, 40, 30]
+    res = find_superpixel(img, Ks, 8*0.5, use_function, True)
+    Ks.sort(key=lambda x:-x)
+
+    fig, axs = plt.subplots(1, len(Ks), figsize=(20,10))
+    for i,K in enumerate(Ks):
+        axs[i].imshow(img)
+        mask = create_overlay_borders(img, res[i])
+        axs[i].imshow(mask) 
+        axs[i].axis("off")
+        axs[i].title.set_text("K = "+str(K))
+    plt.show()
+
+#example1()
+#example2()
