@@ -88,8 +88,6 @@ class Edge:
         return self.gain>other.gain
 
         
-
-
 def build_edges(img: np.ndarray,
                 opt: bool,
                 similarity_function: Callable[[np.ndarray, np.ndarray, bool], float]
@@ -307,7 +305,7 @@ def find_superpixel(img: np.ndarray,
 
 
 
-
+### Compute borders of Superpixels
 def find_border(l:list[tuple[int,int]],
                 img_shape:tuple[int,int]
                 )->list[tuple[int,int]]:
@@ -378,6 +376,8 @@ def plot_img_with_borders(img:np.ndarray, SP:Superpixel, color=[255,0,0,150]):
     plt.imshow(img)
     plt.imshow(create_overlay_borders(img, SP, color=color))
     
+
+
 
 
 def example1():
