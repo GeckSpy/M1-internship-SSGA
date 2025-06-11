@@ -227,13 +227,12 @@ def easyPartialUpdateTree(heap: MinHeap,
 
 
 ### Lazy greedy
-Superpixel = list[list[tuple[int, int]]]
 def find_superpixel(img: np.ndarray,
                     K,
                     lambda_coef: float,
                     similarity_function: Callable[[np.ndarray, np.ndarray, bool], float],
                     opt:bool=True
-                    )->Superpixel:
+                    )->list[list[tuple[int, int]]]:
     """
     - K: number of superpixel to find. Can be a list to return multiple SPs selections
     - lambda_coef (=0.5): balancing coefficient
@@ -335,7 +334,7 @@ def find_border(l:list[tuple[int,int]],
     return border
             
 
-def find_borders(L:Superpixel,
+def find_borders(L:list[list[tuple[int, int]]],
                  img_shape:tuple[int,int]
                  )->list[list[tuple[int,int]]]:
     """
@@ -348,7 +347,7 @@ def find_borders(L:Superpixel,
 
 
 def create_overlay_borders(img: np.ndarray,
-                            SP: Superpixel,
+                            SP: list[list[tuple[int, int]]],
                             color=[255,0,0,150]):
     """
     Create an overaly image containing the borders of superpixels
@@ -369,7 +368,7 @@ def create_overlay_borders(img: np.ndarray,
     return overlay
 
 
-def plot_img_with_borders(img:np.ndarray, SP:Superpixel, color=[255,0,0,150]):
+def plot_img_with_borders(img:np.ndarray, SP:list[list[tuple[int, int]]], color=[255,0,0,150]):
     """
     plot the given image with the superpixels' borders overlay
     """
@@ -378,8 +377,138 @@ def plot_img_with_borders(img:np.ndarray, SP:Superpixel, color=[255,0,0,150]):
     
 
 
+### Superpixel classes for data result
+class Superpixel:
+    def __init__(self, liste, labels, gt, counting0=True):
+        self.labels = [l for l in labels if not(not counting0 and l==0)]
+        self.pixels = [coor for coor in liste if not(not counting0 and gt[coor]==0)]
+
+        self.class_count = {l:0 for l in self.labels}
+        for coor in self.pixels:
+            self.class_count[gt[coor]] += 1
+
+        self.guess = self.labels[0]
+        for l in self.labels:
+            if self.class_count[l] > self.class_count[self.guess]:
+                self.guess = l
+
+        self.proportion = self.class_count[self.guess]/len(self.pixels)
+        self.isSingleClass = self.class_count[self.guess] == len(self.pixels)
 
 
+
+
+class SuperpixelClassifier:
+    def __init__(self, liste, labels, gt, counting0=True):
+        self.counting0 = counting0
+        self.labels = [l for l in labels if not(not counting0 and l==0)]
+
+        self.liste = []
+        self.pixels = []
+        for l in liste:
+            new_list = [coor for coor in l if not(not counting0 and gt[coor]==0)]
+            if new_list!=[]:
+                self.liste.append(new_list)
+                self.pixels += new_list
+
+        self.SPs:list[Superpixel] = [Superpixel(l, self.labels, gt, counting0) for l in self.liste]
+        self.association:dict[tuple[int,int], Superpixel] = {}
+        for i,SP in enumerate(self.SPs):
+            for coor in SP.pixels:
+                self.association[coor] = i
+
+        self.data_class = {l:[] for l in labels}
+        self.guess_map = np.zeros(gt.shape, dtype=int)
+        for x,y in self.pixels:
+            g = self.guess(x,y)
+            self.guess_map[x,y] = g
+            self.data_class[g].append((x,y))
+
+    
+    def getSP(self, x,y) -> Superpixel:
+        return self.SPs[self.association[(x,y)]]
+    
+
+    def guess(self, x,y):
+        return self.getSP(x,y).guess
+
+
+    def predict(self, liste):
+        return [self.guess(x,y) for x,y in liste]
+    
+    
+    def accuracy(self, samples, labels):
+        assert len(samples)==len(labels)
+        prediction = self.predict(samples)
+        return len([i for i in range(len(samples)) if prediction[i]==labels[i]])
+    
+
+    def singleClassCount(self):
+        return len([i for i in range(len(self.SPs)) if self.SPs[i].isSingleClass])
+    
+    def singleClassProportion(self):
+        return self.singleClassCount()/len(self.SPs)
+    
+
+    def averageProportion(self):
+        return np.average([SP.proportion for SP in self.SPs])
+
+    
+    def labelAccuracy(self, data_class, label):
+        if label not in self.labels:
+            return False
+        goodGuessCount = 0
+        for x,y in data_class[label][1]:
+            if self.guess_map[x,y] == label:
+                goodGuessCount += 1
+        return goodGuessCount/len(data_class[label][1])
+    
+    def overallAccuracy(self, gt):
+        goodGuessCount = 0
+        for x,y in self.pixels:
+            if gt[x,y] == self.guess_map[x,y]:
+                goodGuessCount +=1
+        return goodGuessCount/len(self.pixels)
+    
+
+    def averageAccuracy(self, gt):
+        dic = {l:[0,0] for l in self.labels}
+        for x,y in self.pixels:
+            l = gt[x,y]
+            dic[l][0] += 1
+            if l==self.guess(x,y):
+                dic[l][1] += 1
+        
+        return sum([e[1]/e[0] for e in dic.values()])/len(self.labels)
+    
+
+
+    def jaccard(self, gt, data_class, label, returnWeight=False):
+        liste = data_class[label][1]
+        if not self.counting0:
+            liste = [coor for coor in liste if gt[coor]!=0]
+            
+        self_set = set(self.data_class[label])
+        data_set = set(liste)
+        inter = len(data_set.intersection(self_set))
+        union = len(data_set.union(self_set))
+
+        if returnWeight:
+            return inter/union, len(liste)
+        return inter/union
+    
+    
+    def averageWeightedJaccard(self, gt, data_class):
+        sum = 0
+        for l in self.labels:
+            jacc, weight = self.jaccard(gt, data_class, l, returnWeight=True)
+            sum += weight*jacc
+        return sum/len(self.labels)
+
+
+
+
+### Example of usage
 def example1():
     """
     Example of usage of entropy rate superpixel implementation
