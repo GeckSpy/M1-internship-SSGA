@@ -38,6 +38,12 @@ def norm1_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     return basic_dist(is_diagonal) * np.abs(px-py).sum()/len(px)
 
 
+def cosine_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+    """
+    """
+    return (1-np.dot(px,py)/(np.linalg.norm(px)*np.linalg.norm(py)))/2
+
+
 
 def guassian_similarity(
         px: np.ndarray,
@@ -67,6 +73,10 @@ def complete_norm2_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->f
 
 def complete_norm1_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     return guassian_similarity(px,py,1, is_diagonal, norm1_similarity)
+
+
+def complete_cosine_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+    return guassian_similarity(px,py,1, is_diagonal, cosine_similarity)
 
 
 
