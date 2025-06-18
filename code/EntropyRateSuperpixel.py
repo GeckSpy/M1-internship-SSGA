@@ -408,6 +408,7 @@ def plot_img_with_borders(img:np.ndarray, SP:list[list[tuple[int, int]]], color=
 
 
 ### Superpixel classes for data result
+
 class Superpixel:
     def __init__(self, liste, labels, gt, counting0=True):
         self.labels = [l for l in labels if not(not counting0 and l==0)]
