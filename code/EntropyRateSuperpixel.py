@@ -40,8 +40,24 @@ def norm1_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
 
 def cosine_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     """
+    Shifted cosine similarity
+    - px, py define two spectral vector
+    - is_diagonal: false if px and py are side by side
     """
     return (1-np.dot(px,py)/(np.linalg.norm(px)*np.linalg.norm(py)))/2
+
+
+def perason_correlation(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+    """
+    Shifted Perason Correlation
+    - px, py define two spectral vector
+    - is_diagonal: false if px and py are side by side
+    """
+    sx = (px - np.average(px))/np.std(px)
+    sy = (py - np.average(py))/np.std(py)
+    return cosine_similarity(sx, sy, is_diagonal)
+
+
 
 
 
@@ -77,6 +93,10 @@ def complete_norm1_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->f
 
 def complete_cosine_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
     return guassian_similarity(px,py,1, is_diagonal, cosine_similarity)
+
+
+def complete_perason_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+    return guassian_similarity(px,py,1, is_diagonal, perason_correlation)
 
 
 
