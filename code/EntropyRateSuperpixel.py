@@ -154,7 +154,7 @@ def getLambdaPerason(K:int, N:int, M:int):
     - K: number of wanted Superpixels
     - N,M: dimension of the image
     """
-    return 0
+    return 1.3289 * gamma * K * np.log(N*M/K)**-0.086
 
 
 nameToLambdaModel = {

@@ -200,5 +200,5 @@ def plot_lambda_models_vs_gt():
     plt.show()
 
 
-#find_best_models_parameters("average", show_plot=True)
+#find_best_models_parameters("perason", show_plot=True)
 #plot_lambda_models_vs_gt()
