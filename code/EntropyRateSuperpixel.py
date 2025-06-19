@@ -167,7 +167,6 @@ nameToLambdaModel = {
 
 
 
-
 ### Build edges, loops and weight
 class Edge:
     def __init__(self, u:int,v:int,w:float=0,gain:float=0):
@@ -351,15 +350,16 @@ def find_superpixel(img: np.ndarray,
     else:
         CSF = create_CSF(simFun, img)
 
+
+    N,M,_ = img.shape
     if lambda_coef=="auto":
         if simFun not in nameToLambdaModel.keys():
             raise ValueError(simFun + "similarity function not supported for lambda 'auto'")
         else:
-            lambda_coef = nameToLambdaModel[simFun]
+            lambda_coef = nameToLambdaModel[simFun](K, N,M)
 
 
     # Initialisation
-    n,m,_ = img.shape
     loops_weight, edges, _ = build_loops_and_edges(img, diagonnalyConnected, CSF)
 
     erGainArr = np.zeros(len(edges))
@@ -367,7 +367,7 @@ def find_superpixel(img: np.ndarray,
     maxErGain, maxBGain = 0,0
     for i,e in enumerate(edges):
         erGainArr[i] = gain_entropy_rate(e.w, loops_weight[e.u], loops_weight[e.v])
-        bGainArr[i] = gain_balancing(n*m, 1, 1)
+        bGainArr[i] = gain_balancing(N*M, 1, 1)
 
         if erGainArr[i]>maxErGain:
             maxErGain = erGainArr[i]
@@ -380,7 +380,7 @@ def find_superpixel(img: np.ndarray,
         e.gain = erGainArr[i] + bGainArr[i]*balancing
     
     # Initialisation of Union-Find and MinHeap structure 
-    uf = UnionFind(n*m)
+    uf = UnionFind(N*M)
     heap = MinHeap()
     for i,e in enumerate(edges):
         heap.insert(i, -e.gain)
@@ -398,7 +398,7 @@ def find_superpixel(img: np.ndarray,
                 uf.union(ru,rv)
                 loops_weight[best_edge.u] -= best_edge.w
                 loops_weight[best_edge.v] -= best_edge.w
-                easyPartialUpdateTree(heap, uf, edges, loops_weight, n*m, balancing)
+                easyPartialUpdateTree(heap, uf, edges, loops_weight, N*M, balancing)
             
     
         # Compute pixels in each superpixels
@@ -406,8 +406,8 @@ def find_superpixel(img: np.ndarray,
         superpixels = [[] for _ in range(len(superpixel_component))]
         for i,superpixel in enumerate(superpixel_component):
             for j in superpixel:
-                x = j//m
-                y = j%m
+                x = j//M
+                y = j%M
                 superpixels[i].append((x,y))
         SPs_list.append(superpixels)
 
