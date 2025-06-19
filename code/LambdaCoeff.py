@@ -10,12 +10,11 @@ gamma = 0.15
 def computePs(K:int, N:int, M:int):
     """
     Compute the minimal allowed size for SPS
-
     - K: number of wanted superpixels
-
     - N, M: dimension of the image
     """
     return int(N*M/K * 1/np.log(np.log(N*M/K)) * gamma)
+
 
 
 ### Find lambda coefficient methdos
@@ -50,6 +49,7 @@ def dichotomies_search(data:np.ndarray,
     return aux(mini, maxi, None)
 
 
+
 def findByCroping(data:np.ndarray,
                   similarity_function,
                   nbCroping:int,
@@ -57,7 +57,6 @@ def findByCroping(data:np.ndarray,
                   do_plot:bool=False):
     """
     Try to find a good lambda coefficient by taking average of lambda coefficient of cropped part of the image
-
     - n,m: dimension of the cropped imgs
     """
     # Didn't performmed well
@@ -117,7 +116,8 @@ def r2_score(z_true, z_pred):
 
 
 
-def find_best_models_parameters(usedSimFun:int, show_plot:bool=False):
+def find_best_models_parameters(simFunName, show_plot:bool=False):
+    usedSimFun = {"average":0, "norm2":1, "norm1":2, "perason":3}[simFunName]
     LambdaCoeffs = Data.FoundLambdaCoeff["SimilarityFunction"]
     points = []
     for dataset in [Data.IndianPines, Data.PaviaUniversity]:
@@ -177,7 +177,6 @@ def find_best_models_parameters(usedSimFun:int, show_plot:bool=False):
 def getLambdaAverage(K:int, N:int, M:int):
     """
     Return the lambda coefficient values of the best model for the basic similarity function (when data has been standardize)
-
     - K: number of wanted Superpixels
     - N,M: dimension of the image
     """
@@ -187,7 +186,6 @@ def getLambdaAverage(K:int, N:int, M:int):
 def getLambdaNorm2(K:int, N:int, M:int):
     """
     Return the lambda coefficient values of the best model for the Norm 2 similarity function (when data has been standardize)
-
     - K: number of wanted Superpixels
     - N,M: dimension of the image
     """
@@ -197,11 +195,19 @@ def getLambdaNorm2(K:int, N:int, M:int):
 def getLambdaNorm1(K:int, N:int, M:int):
     """
     Return the lambda coefficient values of the best model for the Norm 1 similarity function (when data has been standardize)
-
     - K: number of wanted Superpixels
     - N,M: dimension of the image
     """
     return 0.176* gamma* K * np.log(N*M)**1.147
+
+
+def getLambdaPerason(K:int, N:int, M:int):
+    """
+    Return the lambda coefficient values of the best model for the Perason similarity function (when data has been standardize)
+    - K: number of wanted Superpixels
+    - N,M: dimension of the image
+    """
+    return 0
 
 
 
@@ -210,10 +216,10 @@ def plot_lambda_models_vs_gt():
     Plot the lambdas models compared to the found values of lambda
     """
     LambdaCoeffs = Data.FoundLambdaCoeff["SimilarityFunction"]
-    getLambdas = [getLambdaAverage, getLambdaNorm2, getLambdaNorm1]
-    names = ["Basic", "(.)²", "|.|"]
+    getLambdas = [getLambdaAverage, getLambdaNorm2, getLambdaNorm1, getLambdaPerason]
+    names = ["Basic", "norm2", "norm1", "perason"]
 
-    colors = ["orange", "mediumseagreen", "royalblue"]
+    colors = ["orange", "mediumseagreen", "royalblue", "violet"]
     fig, axs = plt.subplots(1, 2)
     for id,dataset in enumerate([Data.IndianPines, Data.PaviaUniversity]):
         n, m, _ = dataset["data"].shape
@@ -232,5 +238,5 @@ def plot_lambda_models_vs_gt():
     plt.show()
 
 
-#find_best_models_parameters(0, show_plot=True)
+#find_best_models_parameters("average", show_plot=True)
 #plot_lambda_models_vs_gt()
