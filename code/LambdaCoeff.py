@@ -35,7 +35,10 @@ def dichotomies_search(data:np.ndarray,
         if i>=j:
             return SP, max(coeff,1)
         
-        SP = find_superpixel(data, K, coeff, similarity_function)
+        SP = find_superpixel(data, K, 
+                             lambda_coef=coeff,
+                             simFun="custom",
+                             custom_similarity_function=similarity_function)
         minSPsize = min([len(l) for l in SP])
         if minSPsize==Ps:
             return SP, coeff
