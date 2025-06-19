@@ -45,6 +45,8 @@ def cosine_similarity(px:np.ndarray, py:np.ndarray,
     """
     x_norm = np.linalg.norm(px) if type(x_norm)==type(None) else x_norm
     y_norm = np.linalg.norm(py) if type(y_norm)==type(None) else y_norm
+    if x_norm==0 or y_norm==0:
+        return -1
     cos_sim = np.dot(px,py)/(x_norm*y_norm)
     return (1-cos_sim)/2
 
@@ -113,6 +115,55 @@ def create_CSF(simFun:str,
 
     raise ValueError("No valid similarity function name")
         
+
+
+
+
+### Best models found for lambda coefficient
+gamma = 0.15
+def getLambdaAverage(K:int, N:int, M:int):
+    """
+    Return the lambda coefficient values of the best model for the basic similarity function (when data has been standardize)
+    - K: number of wanted Superpixels
+    - N,M: dimension of the image
+    """
+    return 0.38 * gamma* K * np.log(N*M*K)**0.668
+
+
+def getLambdaNorm2(K:int, N:int, M:int):
+    """
+    Return the lambda coefficient values of the best model for the Norm 2 similarity function (when data has been standardize)
+    - K: number of wanted Superpixels
+    - N,M: dimension of the image
+    """
+    return 1.214 * gamma* K * np.log(N*M*K)**0.444
+
+
+def getLambdaNorm1(K:int, N:int, M:int):
+    """
+    Return the lambda coefficient values of the best model for the Norm 1 similarity function (when data has been standardize)
+    - K: number of wanted Superpixels
+    - N,M: dimension of the image
+    """
+    return 0.176* gamma* K * np.log(N*M)**1.147
+
+
+def getLambdaPerason(K:int, N:int, M:int):
+    """
+    Return the lambda coefficient values of the best model for the Perason similarity function (when data has been standardize)
+    - K: number of wanted Superpixels
+    - N,M: dimension of the image
+    """
+    return 0
+
+
+nameToLambdaModel = {
+    "average": getLambdaAverage,
+    "norm1": getLambdaNorm1,
+    "norm2": getLambdaNorm2,
+    "perason": getLambdaPerason
+}
+
 
 
 
@@ -285,6 +336,7 @@ def find_superpixel(img: np.ndarray,
     - img: image to segment
     - K: number of superpixel to find. Can be a list to return multiple SPs selections
     - lambda_coef(>=0): balancing coefficient
+        - 'auto' for automatic finding
     - simFun: name of wanted similarity function
         - average, norm1, norm2, cosine, perason
     - diagonnalyConnected (=true: 8-connected graph), (=false: 4-connected graph), default value: true
@@ -298,6 +350,13 @@ def find_superpixel(img: np.ndarray,
         CSF = custom_similarity_function
     else:
         CSF = create_CSF(simFun, img)
+
+    if lambda_coef=="auto":
+        if simFun not in nameToLambdaModel.keys():
+            raise ValueError(simFun + "similarity function not supported for lambda 'auto'")
+        else:
+            lambda_coef = nameToLambdaModel[simFun]
+
 
     # Initialisation
     n,m,_ = img.shape

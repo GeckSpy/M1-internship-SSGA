@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 import MyDataset as Data
-from EntropyRateSuperpixel import find_superpixel
+from EntropyRateSuperpixel import find_superpixel, getLambdaAverage, getLambdaNorm1, getLambdaNorm2, getLambdaPerason
 
 ### Minimum Superpixel size
 gamma = 0.15
@@ -171,44 +171,6 @@ def find_best_models_parameters(simFunName, show_plot:bool=False):
         plt.show()
 
     
-
-
-### Best models found
-def getLambdaAverage(K:int, N:int, M:int):
-    """
-    Return the lambda coefficient values of the best model for the basic similarity function (when data has been standardize)
-    - K: number of wanted Superpixels
-    - N,M: dimension of the image
-    """
-    return 0.38 * gamma* K * np.log(N*M*K)**0.668
-
-
-def getLambdaNorm2(K:int, N:int, M:int):
-    """
-    Return the lambda coefficient values of the best model for the Norm 2 similarity function (when data has been standardize)
-    - K: number of wanted Superpixels
-    - N,M: dimension of the image
-    """
-    return 1.214 * gamma* K * np.log(N*M*K)**0.444
-
-
-def getLambdaNorm1(K:int, N:int, M:int):
-    """
-    Return the lambda coefficient values of the best model for the Norm 1 similarity function (when data has been standardize)
-    - K: number of wanted Superpixels
-    - N,M: dimension of the image
-    """
-    return 0.176* gamma* K * np.log(N*M)**1.147
-
-
-def getLambdaPerason(K:int, N:int, M:int):
-    """
-    Return the lambda coefficient values of the best model for the Perason similarity function (when data has been standardize)
-    - K: number of wanted Superpixels
-    - N,M: dimension of the image
-    """
-    return 0
-
 
 
 def plot_lambda_models_vs_gt():
