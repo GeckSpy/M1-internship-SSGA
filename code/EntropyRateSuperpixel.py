@@ -4,99 +4,116 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from classes import UnionFind, MinHeap
-from typing import Callable
+from typing import Callable, Tuple
 
 
 ### Similarity functions
 def basic_dist(is_diagonal:bool):
     return 1/np.sqrt(2) if is_diagonal else 1
 
-def basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+def average_similarity(px:np.ndarray, py:np.ndarray)->float:
     """
     The original similarity function used
     - px, py define two spectral vector
-    - is_diagonal: false if px and py are side by side
     """
-    return basic_dist(is_diagonal) * np.abs(np.average(px) - np.average(py))
+    return np.abs(np.average(px) - np.average(py))
 
 
-def norm2_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+def norm2_similarity(px:np.ndarray, py:np.ndarray)->float:
     """
     The norm2 proposed similarity function
     - px, py define two spectral vector
-    - is_diagonal: false if px and py are side by side
     """
-    return basic_dist(is_diagonal) * ((px-py)**2).sum()/len(px)
+    return ((px-py)**2).sum()/len(px)
 
 
-def norm1_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+def norm1_similarity(px:np.ndarray, py:np.ndarray)->float:
     """
     The norm1 proposed similarity function
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    return basic_dist(is_diagonal) * np.abs(px-py).sum()/len(px)
+    return np.abs(px-py).sum()/len(px)
 
 
-def cosine_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+def cosine_similarity(px:np.ndarray, py:np.ndarray,
+                      x_norm=None, y_norm=None)->float:
     """
     Shifted cosine similarity
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    return (1-np.dot(px,py)/(np.linalg.norm(px)*np.linalg.norm(py)))/2
+    x_norm = np.linalg.norm(px) if type(x_norm)==type(None) else x_norm
+    y_norm = np.linalg.norm(py) if type(y_norm)==type(None) else y_norm
+    cos_sim = np.dot(px,py)/(x_norm*y_norm)
+    return (1-cos_sim)/2
 
 
-def perason_correlation(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+def perason_correlation(px:np.ndarray, py:np.ndarray,
+                        x_std=None, y_std=None,
+                        x_norm=None, y_norm=None)->float:
     """
     Shifted Perason Correlation
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    sx = (px - np.average(px))/np.std(px)
-    sy = (py - np.average(py))/np.std(py)
-    return cosine_similarity(sx, sy, is_diagonal)
+    sx = (px - np.average(px))/np.std(px) if type(x_std)==type(None) else x_std
+    sy = (py - np.average(py))/np.std(py) if type(y_std)==type(None) else y_std
+    return cosine_similarity(sx, sy, x_norm=x_norm, y_norm=y_norm)
 
 
 
-
-
-def guassian_similarity(
-        px: np.ndarray,
-        py: np.ndarray,
-        sigma: float,
-        is_diagonal: bool, 
-        fun: Callable[[np.ndarray, np.ndarray, bool], float]
-        )->float:
+def guassian(x, sigma=1):
     """
-    Return exp(-fun(px, py, is_diagoanl)/2sigma²)
+    compute guassian of x
     """
     twoSigmaSquared = 2*sigma*sigma
-    return np.exp(-fun(px,py, is_diagonal)/twoSigmaSquared)
+    return np.exp(-x/twoSigmaSquared)
+    
 
-
-def complete_basic_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
+SimFunType = Callable[[Tuple[int,int], Tuple[int,int], bool], float]
+def create_CSF(simFun:str,
+               data:np.ndarray
+               )->SimFunType:
     """
-    The complete original similarity function used
-    - px, py define two spectral vector
-    - is_diagonal: false if px and py are side by side
+    Create the Complete Similarity Function based of the name
+    - data: the image to segment
+    - simFun: name of wanted similarity function
+        - average, norm1, norm2, cosine, perason
     """
-    return guassian_similarity(px,py,1, is_diagonal, basic_similarity)
+    similarity_function = None
+    usedData = data.copy()
+    if simFun=="average":
+        similarity_function = average_similarity
+    elif simFun=="norm1":
+        similarity_function = norm1_similarity
+    elif simFun=="norm2":
+        similarity_function = norm2_similarity
+    if similarity_function!=None:
+        return lambda x,y,b: guassian(basic_dist(b) * similarity_function(usedData[x], usedData[y]), 1)
+    
+    N,M = data.shape[0],data.shape[1]
+    norms = np.zeros((N,M))
+    if simFun=="cosine":
+        for i in range(N):
+            for j in range(M):
+                norms[i,j] = np.linalg.norm(usedData[i,j])
+        return lambda x,y,b: guassian(basic_dist(b) * 
+                cosine_similarity(usedData[x], usedData[y], x_norm=norms[x], y_norm=[y]), 1)
+    
+    if simFun=="perason":
+        for i in range(N):
+            for j in range(M):
+                usedData[i,j] = (usedData[i,j] - np.average(usedData[i,j]))/np.std(usedData[i,j])
+                norms[i,j] = np.linalg.norm(usedData[i,j])
+        return lambda x,y,b: guassian(basic_dist(b) * 
+                                perason_correlation(usedData[x], usedData[y],
+                                                    x_norm=norms[x], y_norm=norms[y],
+                                                    x_std=usedData[x], y_std=usedData[y]), 1)
 
+    raise ValueError("No valid similarity function name")
+        
 
-def complete_norm2_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
-    return guassian_similarity(px,py,1, is_diagonal, norm2_similarity)
-
-def complete_norm1_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
-    return guassian_similarity(px,py,1, is_diagonal, norm1_similarity)
-
-
-def complete_cosine_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
-    return guassian_similarity(px,py,1, is_diagonal, cosine_similarity)
-
-
-def complete_perason_similarity(px:np.ndarray, py:np.ndarray, is_diagonal:bool)->float:
-    return guassian_similarity(px,py,1, is_diagonal, perason_correlation)
 
 
 
@@ -120,7 +137,7 @@ class Edge:
         
 def build_edges(img: np.ndarray,
                 opt: bool,
-                similarity_function: Callable[[np.ndarray, np.ndarray, bool], float]
+                similarity_function: SimFunType
                 )->list[Edge]:
     """
     Compute all the edges and their similarity
@@ -135,21 +152,21 @@ def build_edges(img: np.ndarray,
 
             if j+1<m:
                 v = i*m + j+1
-                w = similarity_function(img[i,j], img[i,j+1], False)
+                w = similarity_function((i,j), (i,j+1), False)
                 edges.append(Edge(u,v,w))
             if i+1<n:
                 v = (i+1)*m + j
-                w = similarity_function(img[i,j], img[i+1,j], False)
+                w = similarity_function((i,j), (i+1,j), False)
                 edges.append(Edge(u,v,w))
 
                 if opt:
                     if j+1<m:
                         v = (i+1)*m + j+1
-                        w = similarity_function(img[i,j], img[i+1,j+1], True)
+                        w = similarity_function((i,j), (i+1,j+1), True)
                         edges.append(Edge(u,v,w))
                     if j-1>=0:
                         v = (i+1)*m + j-1
-                        w = similarity_function(img[i,j], img[i+1,j-1], True)
+                        w = similarity_function((i,j), (i+1,j-1), True)
                         edges.append(Edge(u,v,w))
     return edges
 
@@ -169,7 +186,7 @@ def build_loops(img:np.ndarray, edges:list[Edge])->np.ndarray:
 
 def build_loops_and_edges(img: np.ndarray,
                           opt: bool, 
-                          similarity_function: Callable[[np.ndarray, np.ndarray, bool], float]
+                          similarity_function: SimFunType
                           )->tuple[np.ndarray, list[Edge], float]:
     """
     Build the edges, loops and their normalized weights
@@ -258,25 +275,33 @@ def easyPartialUpdateTree(heap: MinHeap,
 
 ### Lazy greedy
 def find_superpixel(img: np.ndarray,
-                    K,
-                    lambda_coef: float,
-                    similarity_function: Callable[[np.ndarray, np.ndarray, bool], float],
-                    opt:bool=True
+                    K:int,
+                    lambda_coef: float = 0,
+                    simFun:str = "average", 
+                    custom_similarity_function: SimFunType=None,
+                    diagonnalyConnected:bool=True
                     )->list[list[tuple[int, int]]]:
     """
+    - img: image to segment
     - K: number of superpixel to find. Can be a list to return multiple SPs selections
-    - lambda_coef (=0.5): balancing coefficient
-    - opt (=true: 8-connected graph), (=false: 4-connected graph), default value: true
+    - lambda_coef(>=0): balancing coefficient
+    - simFun: name of wanted similarity function
+        - average, norm1, norm2, cosine, perason
+    - diagonnalyConnected (=true: 8-connected graph), (=false: 4-connected graph), default value: true
+    - custom_similarity_function: a custom similarity function of type:
+        - (int,int), (int,int), bool -> float
     """
-    if type(K)==int:
-        K_list = [K]
-    else:
-        K_list = [k for k in K]
+    # Init var
+    K_list = [K] if type(K)==int else [k for k in K]
     K_list.sort(key=lambda x:-x)
+    if simFun=="custom":
+        CSF = custom_similarity_function
+    else:
+        CSF = create_CSF(simFun, img)
 
     # Initialisation
     n,m,_ = img.shape
-    loops_weight, edges, _ = build_loops_and_edges(img, opt, similarity_function)
+    loops_weight, edges, _ = build_loops_and_edges(img, diagonnalyConnected, CSF)
 
     erGainArr = np.zeros(len(edges))
     bGainArr = np.zeros(len(edges))
@@ -549,8 +574,7 @@ def example1():
     #plt.imshow(img)
     #plt.show()
 
-    use_function = complete_basic_similarity
-    res = find_superpixel(img, 100, 8*0.5, use_function, True)
+    res = find_superpixel(img, 100,lambda_coef=4, simFun="average")
     l = [len(l) for l in res]
     print(l)
     print(np.sum(l))
@@ -565,9 +589,8 @@ def example2():
     """
     img = plt.imread("images/low_flower.png")
 
-    use_function = complete_basic_similarity
     Ks = [10, 20, 40, 30]
-    res = find_superpixel(img, Ks, 8*0.5, use_function, True)
+    res = find_superpixel(img, Ks, lambda_coef=4, simFun="norm2", diagonnalyConnected=False)
     Ks.sort(key=lambda x:-x)
 
     fig, axs = plt.subplots(1, len(Ks), figsize=(20,10))

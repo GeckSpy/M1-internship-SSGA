@@ -134,9 +134,11 @@ PaviaCenter = load_dataset("Pavia", PU_class, "Pavia Center")
 
 
 
+
 #### Lambda coefficient (found thanks to LambdaCoeff.dichotomies_search)
 FoundLambdaCoeff = {
     "DataFormat":{
+        # In order: standard, normalized, standardized
         IndianPines["name"]:{
             100:[1, 17, 34],
             200:[1, 33, 72],
@@ -157,6 +159,7 @@ FoundLambdaCoeff = {
         }
     },
     "SimilarityFunction":{
+        # In order: average, norm2, norm1, perason
         IndianPines["name"]:{
             50: [17, 27, 15],
             100:[34, 58, 31],
