@@ -9,7 +9,7 @@ from typing import Callable, Tuple
 
 ### Similarity functions
 def basic_dist(is_diagonal:bool):
-    return 1/np.sqrt(2) if is_diagonal else 1
+    return np.sqrt(2) if is_diagonal else 1
 
 def average_similarity(px:np.ndarray, py:np.ndarray)->float:
     """
