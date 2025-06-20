@@ -420,43 +420,40 @@ def find_superpixel(img: np.ndarray,
 
 ### Compute borders of Superpixels
 def find_border(l:list[tuple[int,int]],
-                img_shape:tuple[int,int]
+                img_shape:tuple[int,int],
+                exterior:bool =False
                 )->list[tuple[int,int]]:
     """
     For l being a list of pixel's indices, return all the pixels at the borders of l
+    - l: list of pixels
+    - move_border: true for exterior border
     """
     n,m = img_shape
-    border = []
     mask = np.zeros(img_shape, dtype=int)
     for x,y in l:
         mask[x,y] = 255
 
-    for x,y in l:
-        if x>0:
-            if mask[x-1][y]==0:
-                border.append((x,y))
-        if x+1<n:
-            if mask[x+1][y]==0:
-                border.append((x,y))
-
-        if y>0:
-            if mask[x][y-1]==0:
-                border.append((x,y))
-        if y+1<m:
-            if mask[x][y+1]==0:
-                border.append((x,y))
-    return border
+    border = {
+        (nx, ny) if exterior else (x,y)
+        for x,y in l
+        for dx,dy in [(-1,0), (1,0), (0,-1), (0,1)]
+        if 0<=x+dx<n and 0<=y+dy<m and mask[x+dx, y+dy]==0
+        for nx, ny in [(x+dx, y+dy)]
+    }
+    return list(border)
             
 
 def find_borders(L:list[list[tuple[int, int]]],
-                 img_shape:tuple[int,int]
+                 img_shape:tuple[int,int],
+                 exterior:bool=False
                  )->list[list[tuple[int,int]]]:
     """
     For L being a list of superpixel, return the list of borders of each superpixel
+    - move_border: true for exterior border
     """
     borders = []
     for i,l in enumerate(L):
-        borders.append(find_border(l, img_shape))
+        borders.append(find_border(l, img_shape, exterior=exterior))
     return borders
 
 
