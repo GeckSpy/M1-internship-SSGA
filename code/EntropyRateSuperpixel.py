@@ -611,11 +611,12 @@ class SuperpixelClassifier:
     
     
     def averageWeightedJaccard(self, gt, data_class):
+        n,m = gt.shape
         sum = 0
         for l in self.labels:
             jacc, weight = self.jaccard(gt, data_class, l, returnWeight=True)
             sum += weight*jacc
-        return sum/len(self.labels)
+        return sum/(len(self.labels)*n*m)
 
 
 
