@@ -326,10 +326,13 @@ def easyPartialUpdateTree(heap: MinHeap,
 ### Lazy greedy
 def find_superpixel(img: np.ndarray,
                     K:int,
-                    lambda_coef: float = 0,
+                    lambda_coef = 0,
                     simFun:str = "average", 
+                    updateLambda:bool = False,
                     custom_similarity_function: SimFunType=None,
-                    diagonnalyConnected:bool=True
+                    diagonnalyConnected:bool=True,
+                    shutSizeMatter:int =0,
+                    newLambdaValue:int =0
                     )->list[list[tuple[int, int]]]:
     """
     - img: image to segment
@@ -352,11 +355,13 @@ def find_superpixel(img: np.ndarray,
 
 
     N,M,_ = img.shape
+    lambda_model = None
     if lambda_coef=="auto":
         if simFun not in nameToLambdaModel.keys():
             raise ValueError(simFun + "similarity function not supported for lambda 'auto'")
         else:
-            lambda_coef = nameToLambdaModel[simFun](K, N,M)
+            lambda_model = nameToLambdaModel[simFun]
+            lambda_coef = lambda_model(K, N,M)
 
 
     # Initialisation
@@ -374,10 +379,10 @@ def find_superpixel(img: np.ndarray,
         if bGainArr[i]>maxBGain:
             maxBGain = bGainArr[i]
     
-
-    balancing = lambda_coef*maxErGain/np.abs(maxBGain)
+    balancing = maxErGain/np.abs(maxBGain)
+    lambda_balancing = lambda_coef * balancing
     for i,e in enumerate(edges):
-        e.gain = erGainArr[i] + bGainArr[i]*balancing
+        e.gain = erGainArr[i] + bGainArr[i]*lambda_balancing
     
     # Initialisation of Union-Find and MinHeap structure 
     uf = UnionFind(N*M)
@@ -389,7 +394,18 @@ def find_superpixel(img: np.ndarray,
     SPs_list = []
     # Main loop
     for K in K_list:
+        if updateLambda and lambda_model!=None:
+            lambda_coef = lambda_model(K,N,M)
+            lambda_balancing = lambda_coef * balancing
+
+        hasShutSize = False
         while uf.count>K and not heap.isEmpty():
+            if (not hasShutSize) and uf.count<shutSizeMatter:
+                hasShutSize = True
+                if newLambdaValue<lambda_coef:
+                    lambda_coef = newLambdaValue
+                lambda_balancing = lambda_coef * balancing
+
             # Find the best edge to add
             best_edge = edges[heap.pop()[0]]
             # Add the edge to the graph
@@ -398,7 +414,7 @@ def find_superpixel(img: np.ndarray,
                 uf.union(ru,rv)
                 loops_weight[best_edge.u] -= best_edge.w
                 loops_weight[best_edge.v] -= best_edge.w
-                easyPartialUpdateTree(heap, uf, edges, loops_weight, N*M, balancing)
+                easyPartialUpdateTree(heap, uf, edges, loops_weight, N*M, lambda_balancing)
             
     
         # Compute pixels in each superpixels
