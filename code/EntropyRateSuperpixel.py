@@ -127,7 +127,7 @@ def getLambdaAverage(K:int, N:int, M:int):
     - K: number of wanted Superpixels
     - N,M: dimension of the image
     """
-    return 0.38 * gamma* K * np.log(N*M*K)**0.668
+    return 0.114 * gamma* K * np.log(N*M*K)**1.158
 
 
 def getLambdaNorm2(K:int, N:int, M:int):
@@ -136,7 +136,7 @@ def getLambdaNorm2(K:int, N:int, M:int):
     - K: number of wanted Superpixels
     - N,M: dimension of the image
     """
-    return 1.214 * gamma* K * np.log(N*M*K)**0.444
+    return 0.623 * gamma* K * np.log(N*M*K)**0.679
 
 
 def getLambdaNorm1(K:int, N:int, M:int):
@@ -145,7 +145,7 @@ def getLambdaNorm1(K:int, N:int, M:int):
     - K: number of wanted Superpixels
     - N,M: dimension of the image
     """
-    return 0.176* gamma* K * np.log(N*M)**1.147
+    return 0.221* gamma* K * np.log(N*M)**1.088
 
 
 def getLambdaPerason(K:int, N:int, M:int):
@@ -154,7 +154,7 @@ def getLambdaPerason(K:int, N:int, M:int):
     - K: number of wanted Superpixels
     - N,M: dimension of the image
     """
-    return 1.329 * gamma * K * np.log(N*M/K)**-0.086
+    return 0.595 * gamma * K * np.log(N*M*K)**0.293
 
 
 nameToLambdaModel = {

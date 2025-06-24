@@ -102,8 +102,12 @@ def model5(xy, a, b):
     x,y = xy
     return a * gamma *y * np.log(np.log(x*y))**b
 
-models = [model1, model2, model3, model4, model5]
+def model6(xy, a, b, c):
+    x,y = xy
+    return a * gamma* y**b * np.log(x*y)**c
 
+
+models = [model1, model2, model3, model4, model5, model6]
 
 
 def r2_score(z_true, z_pred):
@@ -200,5 +204,5 @@ def plot_lambda_models_vs_gt():
     plt.show()
 
 
-#find_best_models_parameters("perason", show_plot=True)
+#find_best_models_parameters("norm2", show_plot=True)
 #plot_lambda_models_vs_gt()
