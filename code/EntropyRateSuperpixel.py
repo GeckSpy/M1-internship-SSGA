@@ -325,7 +325,7 @@ def easyPartialUpdateTree(heap: MinHeap,
 
 ### Lazy greedy
 def find_superpixel(img: np.ndarray,
-                    K:int,
+                    K,
                     lambda_coef = 0,
                     simFun:str = "average", 
                     updateLambda:bool = True,
@@ -391,7 +391,7 @@ def find_superpixel(img: np.ndarray,
         heap.insert(i, -e.gain)
 
 
-    SPs_list = []
+    SPs_dic = {K:[] for K in K_list}
     # Main loop
     for K in K_list:
         if updateLambda and lambda_model!=None:
@@ -425,12 +425,12 @@ def find_superpixel(img: np.ndarray,
                 x = j//M
                 y = j%M
                 superpixels[i].append((x,y))
-        SPs_list.append(superpixels)
+        SPs_dic[K] = superpixels
 
     if len(K_list)==1:
-        return SPs_list[0]
+        return SPs_dic[K_list[0]]
     else:
-        return SPs_list
+        return SPs_dic
 
 
 
