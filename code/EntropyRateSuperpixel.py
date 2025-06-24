@@ -361,7 +361,7 @@ def find_superpixel(img: np.ndarray,
             raise ValueError(simFun + "similarity function not supported for lambda 'auto'")
         else:
             lambda_model = nameToLambdaModel[simFun]
-            lambda_coef = lambda_model(K, N,M)
+            lambda_coef = lambda_model(K_list[0], N,M)
 
 
     # Initialisation
