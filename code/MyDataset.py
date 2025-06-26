@@ -64,7 +64,6 @@ def load_dataset(path :str,
     data = scipy.io.loadmat(datasets_folder + path +".mat")[data_key]
     gt = scipy.io.loadmat(datasets_folder + gt_path + ".mat")[gt_key]
 
-
     if merges!=None:
         new_labels = {l:[l,v] for l,v in data_class.items()}
         for liste, name in merges:
