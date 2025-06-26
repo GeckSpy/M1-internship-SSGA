@@ -630,8 +630,8 @@ class SuperpixelClassifier:
         sum = 0
         for l in self.labels:
             jacc, weight = self.jaccard(gt, data_class, l, returnWeight=True)
-            sum += jacc/weight
-        return sum/len(self.labels)
+            sum += weight*jacc
+        return sum/(len(self.labels)*len(self.pixels))
 
 
 
