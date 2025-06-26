@@ -46,10 +46,11 @@ def standardize_data(data:np.ndarray):
 
 def load_dataset(path :str,
                  data_class: dict[int, str],
-                 name :str,
+                 dataset_name :str,
                  data_key :str=None,
                  gt_key :str=None,
-                 gt_path :str=None):
+                 gt_path :str=None,
+                 merges = None):
     """
     Return the dataset in my format
     """
@@ -63,9 +64,29 @@ def load_dataset(path :str,
     data = scipy.io.loadmat(datasets_folder + path +".mat")[data_key]
     gt = scipy.io.loadmat(datasets_folder + gt_path + ".mat")[gt_key]
 
+
+    if merges!=None:
+        new_labels = {l:[l,v] for l,v in data_class.items()}
+        for liste, name in merges:
+            repr = min(liste)
+            for id in liste:
+                new_labels[id][0]=repr
+                new_labels[id][1]=name
+        data_class = {val[0]:val[1] for val in new_labels.values()}
+
+        N,M = gt.shape
+        new_gt = np.zeros(gt.shape, dtype=int)
+        for i in range(N):
+            for j in range(M):
+                new_gt[i,j] = new_labels[gt[i,j]][0]
+        gt = new_gt
+    
+
     data_classes = classes(gt, data_class)
+
+
     dataset = {
-        "name": name,
+        "name": dataset_name,
         "shape": data.shape,
         "gt": gt,
         "data": data,
@@ -106,8 +127,15 @@ IP_class = {0:"NoInfo",
             16:"Stone-Steel-Towers"
 }
 IndianPines = load_dataset("Indian_pines_corrected", IP_class, "Indian Pines", gt_path="Indian_pines_gt")
-#IndianPines["data"] = IndianPines["data"][:,:,1:]
 #save_dataset("indian_pines", IndianPines)
+
+IPmerges = [[[2,3,4],"Corn"], [[5,7],"Grass-Pasture"], [[10,11,12],"Soybean"]]
+IndianPinesMerged = load_dataset("Indian_pines_corrected", IP_class, "Indian Pines Merged", gt_path="Indian_pines_gt",
+                                 merges=IPmerges)
+
+
+
+
 
 
 ### Pavia University
