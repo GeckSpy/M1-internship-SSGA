@@ -475,7 +475,8 @@ def find_borders(L:list[list[tuple[int, int]]],
 
 def create_overlay_borders(img: np.ndarray,
                             SP: list[list[tuple[int, int]]],
-                            color=[255,0,0,150]):
+                            color=[255,0,0,150],
+                            exterior:bool = False):
     """
     Create an overaly image containing the borders of superpixels
     """
@@ -487,7 +488,7 @@ def create_overlay_borders(img: np.ndarray,
     else:
         n,m,_ = img.shape
 
-    borders = find_borders(SP, (n,m))
+    borders = find_borders(SP, (n,m), exterior=exterior)
     overlay = np.zeros((n,m, 4), dtype=int)
     for border in borders:
         for x,y in border:
