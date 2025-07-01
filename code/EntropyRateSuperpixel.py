@@ -582,6 +582,11 @@ class SuperpixelClassifier:
     def averageProportion(self):
         return np.average([SP.proportion for SP in self.SPs])
 
+    def averageWeightedProportion(self):
+        sum = 0
+        for SP in self.SPs:
+            sum += len(SP.pixels) * SP.proportion
+        return sum/len(self.pixels)
     
     def labelAccuracy(self, data_class, label):
         if label not in self.labels:
