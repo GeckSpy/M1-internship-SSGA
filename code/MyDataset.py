@@ -19,6 +19,13 @@ def classes(gt:np.ndarray,
     for i in range(n):
         for j in range(m):
             res[gt[i,j]][1].append((i,j))
+
+    key_to_del = []
+    for key,value in res.items():
+        if len(value[1])==0:
+            key_to_del.append(key)
+    for key in key_to_del:
+        del res[key]
     return res
 
 
@@ -102,7 +109,7 @@ def copyDataset(dataset):
         "shape": dataset["data"].shape,
         "gt": dataset["gt"].copy(),
         "data": dataset["data"].copy(),
-        "class": dataset["class"],
+        "class": classes(dataset["gt"], dataset["data_class"]),
         "labels": [l for l in dataset["labels"]],
         "data_class": dataset["data_class"]
     }
@@ -119,6 +126,7 @@ def cropDataset(dataset, sizeX, sizeY):
     dataset["gt"] = dataset["gt"][xStart:xStart+sizeX, yStart:yStart+sizeY]
     dataset["shape"] = dataset["data"].shape
     dataset["class"] = classes(dataset["gt"], dataset["data_class"])
+    dataset["labels"] = [i for i in dataset["class"].keys()]
 
     return dataset, xStart, yStart
 
