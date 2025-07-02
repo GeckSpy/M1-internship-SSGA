@@ -109,13 +109,14 @@ def copyDataset(dataset):
 
 
 def cropDataset(dataset, sizeX, sizeY):
+    dataset = copyDataset(dataset)
     N,M,_ = dataset["shape"]
     sizeX, sizeY = min(sizeX, N), min(sizeY, M)
     xStart = np.random.randint(0, N-1-sizeX)
     yStart = np.random.randint(0, M-1-sizeY)
 
-    dataset["data"] = dataset["data"][xStart:xStart+size, yStart:yStart+size, :]
-    dataset["gt"] = dataset["gt"][xStart:xStart+size, yStart:yStart+size]
+    dataset["data"] = dataset["data"][xStart:xStart+sizeX, yStart:yStart+sizeY, :]
+    dataset["gt"] = dataset["gt"][xStart:xStart+sizeX, yStart:yStart+sizeY]
     dataset["shape"] = dataset["data"].shape
     dataset["class"] = classes(dataset["gt"], dataset["data_class"])
 
