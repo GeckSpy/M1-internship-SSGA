@@ -55,7 +55,7 @@ def computeKor(data:np.ndarray, P_avg:float=20, n_component:int=1, gamma:float=0
     def f(x):
         return x * np.log(np.log(x))
 
-    def f_inverse(y, x0=5.0):
+    def f_inverse(y):
         if y <= 0:
             raise ValueError("f(x) = x log(log(x)) is only defined for x > e")
         
@@ -75,7 +75,7 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
              SPs_info:list[SPInfo],
              K:int,
              data:np.ndarray,
-             simFun=comp_SP,
+             simFun=norm1_similarity,
              return_info:bool=False):
     
     def insert_sorted(l, elt):
@@ -93,7 +93,7 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
     n_component = SPs_info[0].n_component
     nb_cc = len(SPs)
     existing = [True for _ in range(nb_cc)]
-    edges = [(u, v, simFun(SPs_info[u], SPs_info[v])) for u in range(nb_cc)
+    edges = [(u, v, comp_SP(SPs_info[u], SPs_info[v], simFun=simFun)) for u in range(nb_cc)
                 for v in SPs_info[u].neighboor if u<v]
     edges.sort(key=lambda x:x[2])
     
@@ -109,7 +109,7 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
             edges = [(u,v,w) for u,v,w in edges if u!=k1 and v!=k2 and u!=k2 and v!=k1 and existing[u] and existing[v]]
             for v in SPs_info[k1].neighboor:
                 if v!=k1 and v!=k2 and existing[v]:
-                    insert_sorted(edges, (k1,v,simFun(SPs_info[k1], SPs_info[v])))
+                    insert_sorted(edges, (k1,v,comp_SP(SPs_info[k1], SPs_info[v], simFun=simFun)))
             
             nb_cc -=1
 
@@ -119,7 +119,7 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
         return [SP for i,SP in enumerate(SPs) if existing[i]]
 
 
-def mergedBasedSegmentation(data, K, n_component=1, P_avg=20, SPs=None):
+def mergedBasedSegmentation(data, K, n_component=1, P_avg=20, SPs=None, simFun=norm1_similarity):
     N,M = data.shape[0], data.shape[1]
     K_or = computeKor(data, n_component=n_component, P_avg=P_avg)
 
@@ -138,4 +138,4 @@ def mergedBasedSegmentation(data, K, n_component=1, P_avg=20, SPs=None):
             k2 = pixelToSP[x,y]
             SPs_info[k1].neighboor.add(k2)
 
-    return merge_SP(SPs, SPs_info, K, data, return_info=False)
+    return merge_SP(SPs, SPs_info, K, data, return_info=False, simFun=simFun)
