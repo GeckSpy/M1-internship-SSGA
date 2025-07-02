@@ -119,11 +119,13 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
         return [SP for i,SP in enumerate(SPs) if existing[i]]
 
 
-def mergedBasedSegmentation(data, K, n_component=1, P_avg=20):
+def mergedBasedSegmentation(data, K, n_component=1, P_avg=20, SPs=None):
     N,M = data.shape[0], data.shape[1]
     K_or = computeKor(data, n_component=n_component, P_avg=P_avg)
 
-    SPs = find_superpixel(data, K_or, lambda_coef="auto", simFun="norm1")
+    if SPs==None:
+        SPs = find_superpixel(data, K_or, lambda_coef="auto", simFun="norm1")
+        
     pixelToSP = np.zeros((N,M), dtype=int)
     for k,SP in enumerate(SPs):
         for x,y in SP:
