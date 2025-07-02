@@ -85,6 +85,7 @@ def normalize(vec):
 
 def stdFtestnorm1(clusters, dist=(1,"")):
     # High = well separated
+    coeff, _ = dist
     K = len(clusters)
     sizes = [len(cluster) for cluster in clusters]
     n = np.sum(sizes)
@@ -101,20 +102,21 @@ def stdFtestnorm1(clusters, dist=(1,"")):
 
     BGV = 0
     WGV = 0
-    if dist[0]=="exp":
+    if coeff=="exp":
         for k in range(K):
             BGV += sizes[k] * (np.abs(averages[k]-average) * np.exp(-stds[k]*std)).sum()
             for ts in clusters[k]:
                 WGV += (np.abs(ts-averages[k]) * np.exp(-stds[k]**2)).sum()
     else:
         for k in range(K):
-            BGV += sizes[k] * (np.abs(averages[k]-average) * (1-stds[k]*std)**dist).sum()
+            BGV += sizes[k] * (np.abs(averages[k]-average) * (1-stds[k]*std)**coeff).sum()
             for ts in clusters[k]:
-                WGV += (np.abs(ts-averages[k]) * (1-stds[k]**2)**dist).sum()
+                WGV += (np.abs(ts-averages[k]) * (1-stds[k]**2)**coeff).sum()
     
     if WGV==0:
         return np.inf
     return (n-K)/(K-1) * BGV/WGV
+
 
 
 ### Compute information for multileve-based algorithm
