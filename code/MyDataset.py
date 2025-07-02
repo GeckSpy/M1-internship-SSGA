@@ -156,7 +156,26 @@ PaviaUniversity = load_dataset("PaviaU", PU_class, "Pavia University")
 PaviaCenter = load_dataset("Pavia", PU_class, "Pavia Center")
 
 
-
+### Salinas Scene
+SS_class = {0:"NoInfo",
+            1:"Brocoli green weeds 1",
+            2:"Brocoli green weeds 2",
+            3:"Fallow",
+            4:"Fallow rough plow",
+            5:"Fallow smooth",
+            6:"Stubble",
+            7:"Celery",
+            8:"Grapes_untrained",
+            9:"Soil_vinyard_develop",
+            10:"Corn senesced green weeds",
+            11:"Lettuce romaine-4wk",
+            12:"Lettuce romaine-5wk",
+            13:"Lettuce romaine-6wk",
+            14:"Lettuce romaine-7wk",
+            15:"Vinyard untrained",
+            16:"Vinyard vertical trellis"
+}
+SalinasScene = load_dataset("Salinas_corrected", SS_class, "Salinas Scene", gt_path="Salinas_gt")
 
 
 
