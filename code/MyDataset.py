@@ -90,9 +90,21 @@ def load_dataset(path :str,
         "gt": gt,
         "data": data,
         "class": data_classes,
-        "labels": [i for i in data_classes.keys()]
+        "labels": [i for i in data_classes.keys()],
+        "data_class": data_class
     }
     return dataset
+
+
+def copyDataset(dataset):
+    return {
+        "name": dataset["name"],
+        "shape": dataset["data"].shape,
+        "gt": dataset["gt"].copy(),
+        "data": dataset["data"].copy(),
+        "class": dataset["class"],
+        "labels": [l for l in dataset["labels"]]
+    }
 
 
 
