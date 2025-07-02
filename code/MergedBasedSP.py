@@ -75,7 +75,8 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
              SPs_info:list[SPInfo],
              K:int,
              data:np.ndarray,
-             simFun=comp_SP):
+             simFun=comp_SP,
+             return_info:bool=False):
     
     def insert_sorted(l, elt):
         _,_,w = elt
@@ -112,11 +113,13 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
             
             nb_cc -=1
 
-    return [SP for i,SP in enumerate(SPs) if existing[i]], [SP_info for i,SP_info in enumerate(SPs_info) if existing[i]]
+    if return_info:
+        return [SP for i,SP in enumerate(SPs) if existing[i]], [SP_info for i,SP_info in enumerate(SPs_info) if existing[i]]
+    else:
+        return [SP for i,SP in enumerate(SPs) if existing[i]]
 
 
-
-def compute_SP_by_merging(data, K, n_component=1, P_avg=20):
+def mergedBasedSegmentation(data, K, n_component=1, P_avg=20):
     N,M = data.shape[0], data.shape[1]
     K_or = computeKor(data, n_component=n_component, P_avg=P_avg)
 
@@ -133,4 +136,4 @@ def compute_SP_by_merging(data, K, n_component=1, P_avg=20):
             k2 = pixelToSP[x,y]
             SPs_info[k1].neighboor.add(k2)
 
-    return merge_SP(SPs, SPs_info, K, data)
+    return merge_SP(SPs, SPs_info, K, data, return_info=False)
