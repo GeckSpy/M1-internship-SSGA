@@ -16,9 +16,12 @@ class SPInfo:
 
         self.n_component = min(n_component, min(self.time_series.shape))
 
-        self.pca = PCA(n_components=self.n_component)
-        self.coeffs = self.pca.fit_transform(self.time_series)
-        self.components = np.array([self.pca.components_[i]+self.pca.mean_ for i in range(self.n_component)])     
+        if len(pixels)==1:
+            self.components = self.time_series
+        else:
+            self.pca = PCA(n_components=self.n_component)
+            self.coeffs = self.pca.fit_transform(self.time_series)
+            self.components = np.array([self.pca.components_[i]+self.pca.mean_ for i in range(self.n_component)])     
 
 
 
