@@ -177,6 +177,10 @@ SS_class = {0:"NoInfo",
 }
 SalinasScene = load_dataset("Salinas_corrected", SS_class, "Salinas Scene", gt_path="Salinas_gt")
 
+SSmerges = [[[1,2,3],"Brocoli"], [[3,4,5],"Fallow"], [[11,12,13,14],"Lettuce romaine"], [[15,16], "Vinyard"]]
+SalinasSceneMerged = load_dataset("Salinas_corrected", SS_class, "Salinas Scene Merged", gt_path="Salinas_gt",
+                                 merges=SSmerges)
+
 
 
 
