@@ -91,9 +91,9 @@ def stdFtestnorm1(clusters, dist=(1,"")):
     n = np.sum(sizes)
     averages = np.array([np.average(cluster, axis=0) for cluster in clusters])
     if dist[1]=="exp":
-        stds = [normalize(np.exp(np.std(cluster, axis=0))) for cluster in clusters]
+        stds = [normalize(np.exp(np.abs(np.std(cluster, axis=0)))) for cluster in clusters]
     else:
-        stds = [normalize(np.std(cluster, axis=0)) for cluster in clusters]
+        stds = [normalize(np.abs(np.std(cluster, axis=0))) for cluster in clusters]
 
     TS = [ts for cluster in clusters for ts in cluster]
     average = np.average(TS, axis=0)
