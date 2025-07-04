@@ -161,14 +161,17 @@ def createMultilevelInfo(data:np.ndarray, Ks:list[int]):
 
 
 ### Multilevel Main algorithm
-def multilevelSPsegmentation(data, K, n_component=0, varFun=anovaFtest, dist=norm1_similarity, infos=None):
+def multilevelSPsegmentation(data, K, n_component=0, varFun=anovaFtest, dist=norm1_similarity, infos=None, compare_comp=False):
+    if n_component==0 and compare_comp:
+        raise ValueError("Cannot compare PCA component for <=0 components")
+    
     N,M,_ = data.shape
     Ks = compute_Ks(N,M)
     if infos==None:
         infos = createMultilevelInfo(data, Ks)
     SPsDic, getSP, _, getChilds = infos
 
-    def divide_comp_var(level, idSP, n_component=n_component):
+    def divide_comp_var(level, idSP, n_component=n_component, compare_comp=compare_comp):
         childsID = getChilds[level][idSP]
         if len(childsID)==0: return 0
         if len(childsID)==1: return np.inf
@@ -178,6 +181,16 @@ def multilevelSPsegmentation(data, K, n_component=0, varFun=anovaFtest, dist=nor
             clusters = [[data[coor] for coor in child] for child in childs]
             return varFun(clusters, dist=dist)
         
+        if compare_comp:
+            clusters = []
+            for group in childs:
+                TS = np.array([data[coor] for coor in group])
+                n_component = min(n_component, min(TS.shape))
+                pca = PCA(n_components=n_component)
+                pca.fit_transform(TS)
+                clusters.append(pca.components_ + pca.mean_)
+            return varFun(clusters, dist=dist)
+
         clusters_id = [i for i,child in enumerate(childs) for _ in range(len(child))]
         TS = np.array([data[coor] for child in childs for coor in child])
 
