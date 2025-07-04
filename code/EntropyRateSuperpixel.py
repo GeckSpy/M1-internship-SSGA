@@ -59,16 +59,8 @@ def perason_correlation(px:np.ndarray, py:np.ndarray,
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    if type(x_std)==type(None):
-        stdx = np.std(px)
-        sx = (px - np.average(px)) if stdx==0 else (px - np.average(px))/stdx
-    else:
-        sx = x_std
-    if type(y_std)==type(None):
-        stdy = np.std(px)
-        sy = (py - np.average(py)) if stdy==0 else (py - np.average(py))/stdy
-    else:
-        sy = y_std
+    sx = (px-np.average(px))/(np.std(px)+1e-8) if type(x_std)==type(None) else x_std
+    sy = (py-np.average(py))/(np.std(py)+1e-8) if type(y_std)==type(None) else y_std
     return cosine_similarity(sx, sy, x_norm=x_norm, y_norm=y_norm)
 
 
