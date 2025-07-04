@@ -177,7 +177,6 @@ def computeKor(N:int, M:int, n_component:int=0,
     return int(N*M/choosen_max)
 
 
-
 def computeMergeBasedInfo(data:np.ndarray, n_component:int=0):
     N,M = data.shape[0], data.shape[1]
     K_or = computeKor(N,M, n_component=n_component)
@@ -273,7 +272,6 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
     return [SP for i,SP in enumerate(SPs) if existing[i]]
 
 
-
 def mergedBasedSegmentation(data :np.ndarray, K :int,
                             n_component :int=0,
                             usedVarFun=anovaFtest,
@@ -290,9 +288,6 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
     return merge_SPs(SPs_or, neighboors, data, K,
                n_component=n_component, varFun=usedVarFun,
                compare_comp=compare_comp, dist=dist)
-
-
-
 
 
 
