@@ -277,6 +277,7 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
 def mergedBasedSegmentation(data :np.ndarray, K :int,
                             n_component :int=0,
                             usedVarFun=anovaFtest,
+                            dist=norm1_similarity,
                             compare_comp=False,
                             infos=None):
     
@@ -287,7 +288,8 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
     SPs_or, neighboors = infos
 
     return merge_SPs(SPs_or, neighboors, data, K,
-               n_component=n_component, varFun=usedVarFun, compare_comp=compare_comp)
+               n_component=n_component, varFun=usedVarFun,
+               compare_comp=compare_comp, dist=dist)
 
 
 
