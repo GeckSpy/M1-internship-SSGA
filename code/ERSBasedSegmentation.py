@@ -205,6 +205,9 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
               dist =norm1_similarity,
               compare_comp :bool =False):
     
+    Ks = [K] if type(K)==int else [k for k in K]
+    Ks.sort(key=lambda x:-x)
+
     def insert_sorted(l, elt):
         _,_,w = elt
         left, right = 0, len(l)
@@ -253,23 +256,28 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
                 for v in neighboors[u] if u<v]
     edges.sort(key=lambda x:x[2])
     
-    while nb_cc > K and len(edges)>0:
-        k1,k2,_ = edges.pop(0)
-        if existing[k1] and existing[k2]:
-            existing[k2] = False
-            SPs[k1] += SPs[k2]
-            SPs[k2] = None
-            neighboors[k1] = neighboors[k1].union(neighboors[k2])
-            neighboors[k2] = None
+    SPsDic = {K:[] for K in Ks}
+    for K in Ks:
+        while nb_cc > K and len(edges)>0:
+            k1,k2,_ = edges.pop(0)
+            if existing[k1] and existing[k2]:
+                existing[k2] = False
+                SPs[k1] += SPs[k2]
+                SPs[k2] = None
+                neighboors[k1] = neighboors[k1].union(neighboors[k2])
+                neighboors[k2] = None
 
-            edges = [(u,v,w) for u,v,w in edges if u!=k1 and v!=k2 and u!=k2 and v!=k1 and existing[u] and existing[v]]
-            for v in neighboors[k1]:
-                if v!=k1 and existing[v]:
-                    insert_sorted(edges, (k1,v, simFun(SPs[k1], SPs[v])))
-            
-            nb_cc -=1
+                edges = [(u,v,w) for u,v,w in edges if u!=k1 and v!=k2 and u!=k2 and v!=k1 and existing[u] and existing[v]]
+                for v in neighboors[k1]:
+                    if v!=k1 and existing[v]:
+                        insert_sorted(edges, (k1,v, simFun(SPs[k1], SPs[v])))
+                
+                nb_cc -=1
+        SPsDic[K] = [[coor for coor in SP] for i,SP in enumerate(SPs) if existing[i]]
 
-    return [SP for i,SP in enumerate(SPs) if existing[i]]
+    if len(Ks)==1:
+        return SPsDic[Ks[0]]
+    return SPsDic
 
 
 def mergedBasedSegmentation(data :np.ndarray, K :int,
@@ -277,16 +285,12 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
                             usedVarFun=anovaFtest,
                             dist=norm1_similarity,
                             compare_comp=False,
-                            infos=None,
-                            copy_info=True):
+                            infos=None):
     
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
     if infos==None:
         infos = computeMergeBasedInfo(data, n_component=n_component)
-    elif copy_info:
-        SPs_or, neighboors = infos
-        infos = [[coor for coor in SP] for SP in SPs_or], [neig.copy() for neig in neighboors]
     SPs_or, neighboors = infos
 
     return merge_SPs(SPs_or, neighboors, data, K,
