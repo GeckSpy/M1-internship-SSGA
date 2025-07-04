@@ -6,7 +6,7 @@ from EntropyRateSuperpixel import norm1_similarity, find_superpixel, find_border
 from MultilevelSP import anovaFtest
 
 ### Superpixels similarity function
-def sim_comp(components, dist=norm1_similarity)->float:
+def AverageDist(components, dist=norm1_similarity)->float:
     if len(components)<=1: return 0
     distances = 0
     count = 0
@@ -41,7 +41,10 @@ def compute_medoid(group:list, dist=norm1_similarity):
 
 ### Algorithm
 # Computing Kor
-def computeKor(data:np.ndarray, P_avg:float=20, n_component:int=1, gamma:float=0.15)->int:
+def computeKor(N,M, P_avg:float=35, n_component:int=0, gamma:float=0.15)->int:
+    if n_component==0:
+        return int(N*M/P_avg)
+
     def f(x):
         return x * np.log(np.log(x))
 
@@ -55,7 +58,6 @@ def computeKor(data:np.ndarray, P_avg:float=20, n_component:int=1, gamma:float=0
         result = root_scalar(equation, bracket=[np.e + 1e-5, 1e10], method='brentq')
         return result.root
     
-    N,M = data.shape[0], data.shape[1]
     choosen_max = max(P_avg, f_inverse(n_component/gamma))
     return int(N*M/choosen_max)
 
