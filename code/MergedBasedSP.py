@@ -3,48 +3,38 @@ from sklearn.decomposition import PCA
 from scipy.optimize import root_scalar
 
 from EntropyRateSuperpixel import norm1_similarity, find_superpixel, find_borders
-
-
-
-### Superpixel Characterization
-class SPInfo:
-    def __init__(self, pixels:list[tuple[int,int]], data:np.ndarray, n_component:int):
-        self.time_series = np.array([data[x,y] for x,y in pixels])
-        #self.mean = np.average(self.time_series, axis=0)
-        #self.std = np.std(self.time_series, axis=0)
-        self.neighboor = set()
-
-        self.n_component = min(n_component, min(self.time_series.shape))
-
-        if len(pixels)==1:
-            self.components = self.time_series
-        else:
-            self.pca = PCA(n_components=self.n_component)
-            self.coeffs = self.pca.fit_transform(self.time_series)
-            self.components = np.array([self.pca.components_[i]+self.pca.mean_ for i in range(self.n_component)])     
-
-
+from MultilevelSP import anovaFtest
 
 ### Superpixels similarity function
-def sim_comp(comp1:np.ndarray, comp2:np.ndarray, simFun=norm1_similarity)->float:
-    n,_ = comp1.shape
-    m,_ = comp2.shape
+def sim_comp(components, dist=norm1_similarity)->float:
+    if len(components)<=1: return 0
     distances = 0
-    for i in range(n):
-        for j in range(m):
-            distances += simFun(comp1[i], comp2[j])
-    return distances/(n*m)
+    count = 0
+    for i in range(len(components)):
+        comp1 = components[i]
+        for j in range(i+1, len(components)):
+            comp2 = components[j]
+
+            n,_ = comp1.shape
+            m,_ = comp2.shape
+            distance_i = 0
+            for a in range(n):
+                for b in range(m):
+                    distance_i += dist(comp1[a], comp2[b])
+            count += 1
+            distances += distance_i/(n*m)
+    return distances/count
 
 
 
 
-def compute_medoid(group:list, simFun=norm1_similarity):
+def compute_medoid(group:list, dist=norm1_similarity):
     n,_ = group.shape
     distances = np.zeros(n)
     for i in range(n):
         for j in range(n):
             if i!=j:
-                distances[i] += simFun(group[i], group[j])
+                distances[i] += dist(group[i], group[j])
     metroid_index = np.argmin(distances)
     return group[metroid_index]
 
@@ -72,7 +62,7 @@ def computeKor(data:np.ndarray, P_avg:float=20, n_component:int=1, gamma:float=0
 
 
 
-def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFtest, compare_comp=False):
+def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFtest, compare_comp=False, dist=norm1_similarity):
     def insert_sorted(l, elt):
         _,_,w = elt
         left, right = 0, len(l)
@@ -87,7 +77,7 @@ def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFt
 
     def simFun(group1, group2, n_component=n_component, compare_comp=compare_comp):
         if n_component==0:
-            return varFun([group1, group2])
+            return varFun([group1, group2], dist=dist)
         if compare_comp:
             clusters = []
             for group in [group1, group2]:
@@ -96,7 +86,7 @@ def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFt
                 pca = PCA(n_components=n_component)
                 pca.fit_transform(TS)
                 clusters.append(pca.components_ + pca.mean_)
-            return varFun(clusters)
+            return varFun(clusters, dist=dist)
             
         TS = np.array([trainData[coor] for group in [group1, group2] for coor in group])
         n_component = min(n_component, min(TS.shape))
@@ -109,7 +99,7 @@ def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFt
         for i in range(len(group2)):
             clusters[1].append(coeffs[i+len(group1)])
         clusters = [np.array(cluster) for cluster in clusters]
-        return varFun(clusters)
+        return varFun(clusters, dist=dist)
 
 
     SPs = [SP.copy() for SP in SPs_or]
