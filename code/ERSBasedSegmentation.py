@@ -94,6 +94,7 @@ def AverageDist(components:list[list[np.ndarray]], dist=norm1_similarity)->float
 
 
 
+
 ### AnovaF-test-based Standard Deviation weighted variability function
 def normalize(vec):
     arr = np.array(vec)
