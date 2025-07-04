@@ -55,12 +55,20 @@ def perason_correlation(px:np.ndarray, py:np.ndarray,
                         x_std=None, y_std=None,
                         x_norm=None, y_norm=None)->float:
     """
-    Shifted Perason Correlation
+    Shifted Perason CorrelationAverageDist
     - px, py define two spectral vector
     - is_diagonal: false if px and py are side by side
     """
-    sx = (px - np.average(px))/np.std(px) if type(x_std)==type(None) else x_std
-    sy = (py - np.average(py))/np.std(py) if type(y_std)==type(None) else y_std
+    if type(x_std)==type(None):
+        stdx = np.std(px)
+        sx = (px - np.average(px)) if stdx==0 else (px - np.average(px))/stdx
+    else:
+        sx = x_std
+    if type(y_std)==type(None):
+        stdy = np.std(px)
+        sy = (py - np.average(py)) if stdy==0 else (py - np.average(py))/stdy
+    else:
+        sy = y_std
     return cosine_similarity(sx, sy, x_norm=x_norm, y_norm=y_norm)
 
 
