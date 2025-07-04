@@ -227,15 +227,15 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
             clusters = []
             for group in [group1, group2]:
                 TS = np.array([trainData[coor] for coor in group])
-                n_component = min(n_component, min(TS.shape))
-                pca = PCA(n_components=n_component)
+                n_ = min(n_component, min(TS.shape))
+                pca = PCA(n_components=n_)
                 pca.fit_transform(TS)
                 clusters.append(pca.components_ + pca.mean_)
             return varFun(clusters, dist=dist)
             
         TS = np.array([trainData[coor] for group in [group1, group2] for coor in group])
-        n_component = min(n_component, min(TS.shape))
-        pca = PCA(n_components=n_component)
+        n_ = min(n_component, min(TS.shape))
+        pca = PCA(n_components=n_)
         coeffs = pca.fit_transform(TS)
 
         clusters = [[], []]
@@ -375,8 +375,8 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
             clusters = []
             for group in childs:
                 TS = np.array([data[coor] for coor in group])
-                n_component = min(n_component, min(TS.shape))
-                pca = PCA(n_components=n_component)
+                n_ = min(n_component, min(TS.shape))
+                pca = PCA(n_components=n_)
                 pca.fit_transform(TS)
                 clusters.append(pca.components_ + pca.mean_)
             return varFun(clusters, dist=dist)
@@ -384,8 +384,8 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
         clusters_id = [i for i,child in enumerate(childs) for _ in range(len(child))]
         TS = np.array([data[coor] for child in childs for coor in child])
 
-        n_component = min(n_component, min(TS.shape))
-        pca = PCA(n_components=n_component)
+        n_ = min(n_component, min(TS.shape))
+        pca = PCA(n_components=n_)
         coeffs = pca.fit_transform(TS)
 
         clusters = [[] for _ in range(len(childs))]
