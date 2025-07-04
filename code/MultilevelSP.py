@@ -91,9 +91,9 @@ def stdFtestnorm1(clusters, dist=(1,"")):
     n = np.sum(sizes)
     averages = np.array([np.average(cluster, axis=0) for cluster in clusters])
     if dist[1]=="exp":
-        stds = [normalize(np.exp(np.abs(np.std(cluster, axis=0)))) for cluster in clusters]
+        stds = [normalize(np.exp(np.std(cluster, axis=0))) for cluster in clusters]
     else:
-        stds = [normalize(np.abs(np.std(cluster, axis=0))) for cluster in clusters]
+        stds = [normalize(np.std(cluster, axis=0)) for cluster in clusters]
 
     TS = [ts for cluster in clusters for ts in cluster]
     average = np.average(TS, axis=0)
@@ -118,7 +118,7 @@ def stdFtestnorm1(clusters, dist=(1,"")):
     return (n-K)/(K-1) * BGV/WGV
 
 
-
+# Multilevel Algo
 ### Compute information for multileve-based algorithm
 def compute_Ks(N:int, M:int, averageSPSize:int=5)->list[int]:
     Ksmax = int(N*M/averageSPSize)
@@ -129,7 +129,6 @@ def compute_Ks(N:int, M:int, averageSPSize:int=5)->list[int]:
         k *=2
     Ks.sort()
     return Ks
-
 
 
 def createMultilevelInfo(data:np.ndarray, Ks:list[int]):
@@ -161,8 +160,7 @@ def createMultilevelInfo(data:np.ndarray, Ks:list[int]):
     return SPsDic, getSP, getParent, getChilds
 
 
-
-### Main algorithm
+### Multilevel Main algorithm
 def multilevelSPsegmentation(data, K, n_component=0, varFun=anovaFtest, dist=norm1_similarity, infos=None):
     N,M,_ = data.shape
     Ks = compute_Ks(N,M)
