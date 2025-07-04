@@ -277,12 +277,16 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
                             usedVarFun=anovaFtest,
                             dist=norm1_similarity,
                             compare_comp=False,
-                            infos=None):
+                            infos=None,
+                            copy_info=True):
     
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
     if infos==None:
         infos = computeMergeBasedInfo(data, n_component=n_component)
+    elif copy_info:
+        SPs_or, neighboors = infos
+        infos = [[coor for coor in SP] for SP in SPs_or], [neig.copy() for neig in neighboors]
     SPs_or, neighboors = infos
 
     return merge_SPs(SPs_or, neighboors, data, K,
