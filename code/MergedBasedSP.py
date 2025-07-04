@@ -74,13 +74,8 @@ def computeKor(data:np.ndarray, P_avg:float=20, n_component:int=1, gamma:float=0
 
 
 
-def merge_SP(SPs:list[list[tuple[int,int]]],
-             SPs_info:list[SPInfo],
-             K:int,
-             data:np.ndarray,
-             simFun=norm1_similarity,
-             return_info:bool=False):
-    
+
+def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFtest):
     def insert_sorted(l, elt):
         _,_,w = elt
         left, right = 0, len(l)
@@ -93,11 +88,31 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
         l.insert(left, elt)
 
 
-    n_component = SPs_info[0].n_component
+    def simFun(group1, group2, n_component=n_component):
+        if n_component==0:
+            return varFun([group1, group2])
+        else:
+            TS = np.array([trainData[coor] for group in [group1, group2] for coor in group])
+            n_component = min(n_component, min(TS.shape))
+            pca = PCA(n_components=n_component)
+            coeffs = pca.fit_transform(TS)
+
+            clusters = [[], []]
+            for i in range(len(group1)):
+                clusters[0].append(coeffs[i])
+            for i in range(len(group2)):
+                clusters[1].append(coeffs[i+len(group1)])
+            #clusters = [np.array(cluster) for cluster in clusters]
+            return varFun(clusters)
+
+
+    SPs = [SP.copy() for SP in SPs_or]
+    neighboors:list[set] = [neighboor.copy() for neighboor in neighboors_or]
+
     nb_cc = len(SPs)
     existing = [True for _ in range(nb_cc)]
-    edges = [(u, v, comp_SP(SPs_info[u], SPs_info[v], simFun=simFun)) for u in range(nb_cc)
-                for v in SPs_info[u].neighboor if u<v]
+    edges = [(u, v, simFun(SPs[u], SPs[v])) for u in range(nb_cc)
+                for v in neighboors[u] if u<v]
     edges.sort(key=lambda x:x[2])
     
     while nb_cc > K and len(edges)>0:
@@ -105,40 +120,37 @@ def merge_SP(SPs:list[list[tuple[int,int]]],
         if existing[k1] and existing[k2]:
             existing[k2] = False
             SPs[k1] += SPs[k2]
-            neighboors = SPs_info[k1].neighboor.union(SPs_info[k2].neighboor)
-            SPs_info[k1] = SPInfo(SPs[k1], data, n_component)
-            SPs_info[k1].neighboor = neighboors
+            SPs[k2] = None
+            neighboors[k1] = neighboors[k1].union(neighboors[k2])
+            neighboors[k2] = None
 
             edges = [(u,v,w) for u,v,w in edges if u!=k1 and v!=k2 and u!=k2 and v!=k1 and existing[u] and existing[v]]
-            for v in SPs_info[k1].neighboor:
-                if v!=k1 and v!=k2 and existing[v]:
-                    insert_sorted(edges, (k1,v,comp_SP(SPs_info[k1], SPs_info[v], simFun=simFun)))
+            for v in neighboors[k1]:
+                if v!=k1 and existing[v]:
+                    insert_sorted(edges, (k1,v, simFun(SPs[k1], SPs[v])))
             
             nb_cc -=1
 
-    if return_info:
-        return [SP for i,SP in enumerate(SPs) if existing[i]], [SP_info for i,SP_info in enumerate(SPs_info) if existing[i]]
-    else:
-        return [SP for i,SP in enumerate(SPs) if existing[i]]
+    return [SP for i,SP in enumerate(SPs) if existing[i]]
 
 
-def mergedBasedSegmentation(data, K, n_component=1, P_avg=20, SPs=None, simFun=norm1_similarity):
+
+def mergedBasedSegmentation(data, K, n_component=0, usedVarFun=anovaFtest):
     N,M = data.shape[0], data.shape[1]
+    K_or = computeKor(N,M, n_component=n_component)
 
-    if SPs==None:
-        K_or = computeKor(data, n_component=n_component, P_avg=P_avg)
-        SPs = find_superpixel(data, K_or, lambda_coef="auto", simFun="norm1")
-        
+    SPs_or = find_superpixel(data, K_or, lambda_coef="auto", simFun="norm1")
     pixelToSP = np.zeros((N,M), dtype=int)
-    for k,SP in enumerate(SPs):
+    for k,SP in enumerate(SPs_or):
         for x,y in SP:
             pixelToSP[x,y] = k
 
-    SPs_info = [SPInfo(SP, data, n_component) for SP in SPs]
-    borders = find_borders(SPs, (N,M), exterior=True)
+    neighboors = [set() for _ in range(len(SPs_or))]
+    borders = find_borders(SPs_or, (N,M), exterior=True)
     for k1 in range(len(borders)):
         for x,y in borders[k1]:
             k2 = pixelToSP[x,y]
-            SPs_info[k1].neighboor.add(k2)
+            neighboors[k1].add(k2)
 
-    return merge_SP(SPs, SPs_info, K, data, return_info=False, simFun=simFun)
+    return merge_SPs(SPs_or, neighboors, K, data,
+               n_component=n_component, varFun=usedVarFun)
