@@ -36,9 +36,6 @@ def sim_comp(comp1:np.ndarray, comp2:np.ndarray, simFun=norm1_similarity)->float
     return distances/(n*m)
 
 
-def comp_SP(info1:SPInfo, info2:SPInfo, simFun=norm1_similarity)->float:
-    compSim = sim_comp(info1.components, info2.components, simFun=simFun)
-    return compSim
 
 
 def compute_medoid(group:list, simFun=norm1_similarity):
@@ -75,7 +72,7 @@ def computeKor(data:np.ndarray, P_avg:float=20, n_component:int=1, gamma:float=0
 
 
 
-def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFtest):
+def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFtest, compare_comp=False):
     def insert_sorted(l, elt):
         _,_,w = elt
         left, right = 0, len(l)
@@ -88,22 +85,31 @@ def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFt
         l.insert(left, elt)
 
 
-    def simFun(group1, group2, n_component=n_component):
+    def simFun(group1, group2, n_component=n_component, compare_comp=compare_comp):
         if n_component==0:
             return varFun([group1, group2])
-        else:
-            TS = np.array([trainData[coor] for group in [group1, group2] for coor in group])
-            n_component = min(n_component, min(TS.shape))
-            pca = PCA(n_components=n_component)
-            coeffs = pca.fit_transform(TS)
-
-            clusters = [[], []]
-            for i in range(len(group1)):
-                clusters[0].append(coeffs[i])
-            for i in range(len(group2)):
-                clusters[1].append(coeffs[i+len(group1)])
-            #clusters = [np.array(cluster) for cluster in clusters]
+        if compare_comp:
+            clusters = []
+            for group in [group1, group2]:
+                TS = np.array([trainData[coor] for coor in group])
+                n_component = min(n_component, min(TS.shape))
+                pca = PCA(n_components=n_component)
+                pca.fit_transform(TS)
+                clusters.append(pca.components_ + pca.mean_)
             return varFun(clusters)
+            
+        TS = np.array([trainData[coor] for group in [group1, group2] for coor in group])
+        n_component = min(n_component, min(TS.shape))
+        pca = PCA(n_components=n_component)
+        coeffs = pca.fit_transform(TS)
+
+        clusters = [[], []]
+        for i in range(len(group1)):
+            clusters[0].append(coeffs[i])
+        for i in range(len(group2)):
+            clusters[1].append(coeffs[i+len(group1)])
+        clusters = [np.array(cluster) for cluster in clusters]
+        return varFun(clusters)
 
 
     SPs = [SP.copy() for SP in SPs_or]
@@ -135,7 +141,7 @@ def merge_SPs(SPs_or, neighboors_or, K, trainData, n_component=0, varFun=anovaFt
 
 
 
-def mergedBasedSegmentation(data, K, n_component=0, usedVarFun=anovaFtest):
+def computeMergeBasedInfo(data, n_component=0):
     N,M = data.shape[0], data.shape[1]
     K_or = computeKor(N,M, n_component=n_component)
 
@@ -152,5 +158,15 @@ def mergedBasedSegmentation(data, K, n_component=0, usedVarFun=anovaFtest):
             k2 = pixelToSP[x,y]
             neighboors[k1].add(k2)
 
+    return SPs_or, neighboors
+
+
+def mergedBasedSegmentation(data, K, n_component=0, usedVarFun=anovaFtest, infos=None, compare_comp=False):
+    if n_component==0 and compare_comp:
+        raise ValueError("Cannot compare PCA component for <=0 components")
+    if infos==None:
+        infos = computeMergeBasedInfo(data, n_component=n_component)
+    SPs_or, neighboors = infos
+
     return merge_SPs(SPs_or, neighboors, K, data,
-               n_component=n_component, varFun=usedVarFun)
+               n_component=n_component, varFun=usedVarFun, compare_comp=compare_comp)
