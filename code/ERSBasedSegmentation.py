@@ -351,12 +351,15 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
                              compare_comp :bool=False):
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
-    
+
     N,M,_ = data.shape
-    Ks = compute_Ks(N,M)
+    Ks_or = compute_Ks(N,M)
     if infos==None:
-        infos = createMultilevelInfo(data, Ks)
+        infos = createMultilevelInfo(data, Ks_or)
     SPsDic, getSP, _, getChilds = infos
+
+    Ks = [K] if type(K)==int else [k for k in K]
+    Ks.sort(key=lambda x:x)
 
     def divide_comp_var(level, idSP, n_component=n_component, compare_comp=compare_comp):
         childsID = getChilds[level][idSP]
@@ -392,17 +395,23 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
         return varFun(clusters, dist=dist)
 
     heap = MinHeap()
-    for k in range(len(SPsDic[Ks[0]])):
+    for k in range(len(SPsDic[Ks_or[0]])):
         heap.insert((0, k), -divide_comp_var(0, k))
 
-    while 0<len(heap.array)<K:
-        elt,w = heap.pop()
-        level, idSP = elt
-        childsID = getChilds[level][idSP]
-        if childsID==[]:
-            heap.insert((level, idSP), 0)
-            break
-        for id in childsID:
-            heap.insert((level+1, id), -divide_comp_var(level+1, id))
+    SPsDic = {}
+    for K in Ks:
+        while 0<len(heap.array)<K:
+            elt,w = heap.pop()
+            level, idSP = elt
+            childsID = getChilds[level][idSP]
+            if childsID==[]:
+                heap.insert((level, idSP), 0)
+                break
+            for id in childsID:
+                heap.insert((level+1, id), -divide_comp_var(level+1, id))
+        
+        SPsDic[K] = [[coor for coor in getSP(pair.first[0], pair.first[1])] for pair in heap.array]
 
-    return [getSP(pair.first[0], pair.first[1]) for pair in heap.array]
+    if len(Ks)==1:
+        return SPsDic[Ks[0]]
+    return SPsDic
