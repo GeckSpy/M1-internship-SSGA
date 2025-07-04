@@ -335,7 +335,12 @@ def createMultilevelInfo(data:np.ndarray, Ks:list[int]):
 
 
 ### Multilevel Main algorithm
-def multilevelSPsegmentation(data, K, n_component=0, varFun=anovaFtest, dist=norm1_similarity, infos=None, compare_comp=False):
+def multilevelSPsegmentation(data :np.ndarray, K:int,
+                             n_component :int=0,
+                             varFun =anovaFtest,
+                             dist =norm1_similarity,
+                             infos =None,
+                             compare_comp :bool=False):
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
     
