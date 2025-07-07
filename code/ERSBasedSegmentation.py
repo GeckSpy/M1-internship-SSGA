@@ -31,17 +31,35 @@ def center_distances(SP):
         return (c1[0]-c2[0])**2 + (c1[1]-c2[1])**2
 
     center = np.average(SP, axis=0)
-    return [dist_squared(coor, center) for coor in SP]
+    return np.array([dist_squared(coor, center) for coor in SP])
 
+
+def compute_averages(clusters, dtc=None):
+    if type(dtc)==type(None):
+        return np.array([np.average(cluster, axis=0) for cluster in clusters])
+    else:
+        idtc = [np.zeros(len(d)) for d in dtc]
+        for i in range(len(dtc)):
+            x = np.max(dtc[i])-dtc[i]
+            norm = np.linalg.norm(x)
+            if norm==0:
+                idtc[i] = [1/len(dtc[i]) for _ in range(len(dtc[i]))]
+            else:
+                idtc[i] = x/norm
+
+        averages = [0 for _ in range(len(clusters))]
+        for i in clusters:
+            averages[i] = clusters[i] * idtc[i]
+        return averages
 
 
 ### classic clusters separability/variability metrics
-def anovaFtest(clusters:list[list[np.ndarray]], dist=norm1_similarity, avg=None)->float:
+def anovaFtest(clusters:list[list[np.ndarray]], dist=norm1_similarity, dtc=None)->float:
     # High = well separated
     K = len(clusters)
     sizes = [len(cluster) for cluster in clusters]
     n = np.sum(sizes)
-    averages = np.array([np.average(cluster, axis=0) for cluster in clusters])
+    averages = compute_averages(clusters, dtc=dtc)
     average = np.average([ts for cluster in clusters for ts in cluster], axis=0)
 
     BGV = 0
@@ -57,17 +75,17 @@ def anovaFtest(clusters:list[list[np.ndarray]], dist=norm1_similarity, avg=None)
 
 
 from sklearn.metrics import davies_bouldin_score
-def invertedDaviesBouldinIndex(clusters:list[list[np.ndarray]], dist=None, avg=None)->float:
+def invertedDaviesBouldinIndex(clusters:list[list[np.ndarray]], dist=None, dtc=None)->float:
     # Lower value means better clustering then we invert
     labels = [i for i,cluster in enumerate(clusters) for _ in range(len(cluster))]
     X = [ts for cluster in clusters for ts in cluster]
     return 1/davies_bouldin_score(X, labels)
 
 
-def DunnIndex(clusters:list[list[np.ndarray]], dist=norm1_similarity)->float:
+def DunnIndex(clusters:list[list[np.ndarray]], dist=norm1_similarity, dtc=None)->float:
     # High = well separated
     K = len(clusters)
-    averages = np.array([np.average(cluster, axis=0) for cluster in clusters])
+    averages = compute_averages(clusters, dtc=dtc)
 
     minAveragesDist = dist(averages[0], averages[1])
     maxDiameter = 0
@@ -84,12 +102,12 @@ def DunnIndex(clusters:list[list[np.ndarray]], dist=norm1_similarity)->float:
     return minAveragesDist/maxDiameter
 
 
-def invertedXieBeniIndex(clusters:list[list[np.ndarray]], dist=norm1_similarity)->float:
+def invertedXieBeniIndex(clusters:list[list[np.ndarray]], dist=norm1_similarity, dtc=None)->float:
     # low value better then we invert
     K = len(clusters)
     sizes = [len(cluster) for cluster in clusters]
     n = np.sum(sizes)
-    averages = np.array([np.average(cluster, axis=0) for cluster in clusters])
+    averages = compute_averages(clusters, dtc=dtc)
 
     sum = 0
     minAveragesDist = dist(averages[0], averages[1])
@@ -102,7 +120,7 @@ def invertedXieBeniIndex(clusters:list[list[np.ndarray]], dist=norm1_similarity)
     return n*minAveragesDist/sum
 
 
-def AverageDist(components:list[list[np.ndarray]], dist=norm1_similarity)->float:
+def AverageDist(components:list[list[np.ndarray]], dist=norm1_similarity, dtc=None)->float:
     if len(components)<=1: return 0
     distances = 0
     count = 0
@@ -122,13 +140,14 @@ def AverageDist(components:list[list[np.ndarray]], dist=norm1_similarity)->float
     return distances/count
 
 
-def stdFtestnorm1(clusters:list, dist=(1,"")):
+def stdFtestnorm1(clusters:list, dist=(1,""), dtc=None):
     # High = well separated
     coeff, _ = dist
     K = len(clusters)
     sizes = [len(cluster) for cluster in clusters]
     n = np.sum(sizes)
-    averages = np.array([np.average(cluster, axis=0) for cluster in clusters])
+    averages = compute_averages(clusters, dtc=dtc)
+
     if dist[1]=="exp":
         stds = [normalize(np.exp(np.std(cluster, axis=0))) for cluster in clusters]
     else:
