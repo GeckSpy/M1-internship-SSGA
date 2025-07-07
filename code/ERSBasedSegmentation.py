@@ -49,7 +49,10 @@ def compute_averages(clusters, dtc=None):
 
         averages = [0 for _ in range(len(clusters))]
         for i in range(len(clusters)):
-            averages[i] = clusters[i] * idtc[i]
+            sum = 0
+            for j in range(len(clusters[i])):
+                sum += clusters[i][j] * idtc[i][j]
+            averages[i] = sum
         return averages
 
 
@@ -251,7 +254,8 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
     def simFun(group1, group2, n_component=n_component, compare_comp=compare_comp):
         dtc = [center_distances(SP) for SP in [group1, group2]] if weighted_avg else None
         if n_component==0:
-            return varFun([group1, group2], dist=dist, dtc=dtc)
+            clusters = [[trainData[coor] for coor in SP] for SP in [group1, group2]]
+            return varFun(clusters, dist=dist, dtc=dtc)
         if compare_comp:
             clusters = []
             for group in [group1, group2]:
