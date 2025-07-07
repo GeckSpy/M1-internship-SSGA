@@ -5,9 +5,38 @@ from classes import MinHeap
 from EntropyRateSuperpixel import find_superpixel, norm1_similarity, find_borders
 
 
+### Toolbox function
+def normalize(vec):
+    arr = np.array(vec)
+    mini = arr.min()
+    maxi = arr.max()
+    if mini==maxi:
+        return arr/len(arr)
+    return (arr-mini)/(maxi-mini)
+
+
+def compute_medoid(group:list, dist=norm1_similarity):
+    n,_ = group.shape
+    distances = np.zeros(n)
+    for i in range(n):
+        for j in range(n):
+            if i!=j:
+                distances[i] += dist(group[i], group[j])
+    metroid_index = np.argmin(distances)
+    return group[metroid_index]
+
+
+def center_distances(SP):
+    def dist_squared(c1, c2):
+        return (c1[0]-c2[0])**2 + (c1[1]-c2[1])**2
+
+    center = np.average(SP, axis=0)
+    return [dist_squared(coor, center) for coor in SP]
+
+
 
 ### classic clusters separability/variability metrics
-def anovaFtest(clusters:list[list[np.ndarray]], dist=norm1_similarity)->float:
+def anovaFtest(clusters:list[list[np.ndarray]], dist=norm1_similarity, avg=None)->float:
     # High = well separated
     K = len(clusters)
     sizes = [len(cluster) for cluster in clusters]
@@ -28,7 +57,7 @@ def anovaFtest(clusters:list[list[np.ndarray]], dist=norm1_similarity)->float:
 
 
 from sklearn.metrics import davies_bouldin_score
-def invertedDaviesBouldinIndex(clusters:list[list[np.ndarray]], dist=None)->float:
+def invertedDaviesBouldinIndex(clusters:list[list[np.ndarray]], dist=None, avg=None)->float:
     # Lower value means better clustering then we invert
     labels = [i for i,cluster in enumerate(clusters) for _ in range(len(cluster))]
     X = [ts for cluster in clusters for ts in cluster]
@@ -93,29 +122,6 @@ def AverageDist(components:list[list[np.ndarray]], dist=norm1_similarity)->float
     return distances/count
 
 
-
-
-### AnovaF-test-based Standard Deviation weighted variability function
-def normalize(vec):
-    arr = np.array(vec)
-    mini = arr.min()
-    maxi = arr.max()
-    if mini==maxi:
-        return arr/len(arr)
-    return (arr-mini)/(maxi-mini)
-
-
-def compute_medoid(group:list, dist=norm1_similarity):
-    n,_ = group.shape
-    distances = np.zeros(n)
-    for i in range(n):
-        for j in range(n):
-            if i!=j:
-                distances[i] += dist(group[i], group[j])
-    metroid_index = np.argmin(distances)
-    return group[metroid_index]
-
-
 def stdFtestnorm1(clusters:list, dist=(1,"")):
     # High = well separated
     coeff, _ = dist
@@ -149,6 +155,7 @@ def stdFtestnorm1(clusters:list, dist=(1,"")):
     if WGV==0:
         return np.inf
     return (n-K)/(K-1) * BGV/WGV
+
 
 
 
@@ -204,7 +211,8 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
               n_component :int =0,
               varFun=anovaFtest,
               dist =norm1_similarity,
-              compare_comp :bool =False):
+              compare_comp :bool =False,
+              weighted_avg :bool =False):
     
     Ks = [K] if type(K)==int else [k for k in K]
     Ks.sort(key=lambda x:-x)
@@ -222,8 +230,9 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
 
 
     def simFun(group1, group2, n_component=n_component, compare_comp=compare_comp):
+        dtc = [center_distances(SP) for SP in [group1, group2]] if weighted_avg else None
         if n_component==0:
-            return varFun([group1, group2], dist=dist)
+            return varFun([group1, group2], dist=dist, dtc=dtc)
         if compare_comp:
             clusters = []
             for group in [group1, group2]:
@@ -237,7 +246,7 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
                     TS /= TS.std(axis=0) + 1e-8
                     coeffs = pca.fit_transform(TS)
                 clusters.append(pca.components_ + pca.mean_)
-            return varFun(clusters, dist=dist)
+            return varFun(clusters, dist=dist, dtc=dtc)
             
         TS = np.array([trainData[coor] for group in [group1, group2] for coor in group])
         n_ = min(n_component, min(TS.shape))
@@ -256,7 +265,7 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
         for i in range(len(group2)):
             clusters[1].append(coeffs[i+len(group1)])
         clusters = [np.array(cluster) for cluster in clusters]
-        return varFun(clusters, dist=dist)
+        return varFun(clusters, dist=dist, dtc=dtc)
 
 
     SPs = [SP.copy() for SP in SPs_or]
@@ -297,7 +306,8 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
                             usedVarFun=anovaFtest,
                             dist=norm1_similarity,
                             compare_comp=False,
-                            infos=None):
+                            infos=None,
+                            weighted_avg :bool=False):
     
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
@@ -307,7 +317,7 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
 
     return merge_SPs(SPs_or, neighboors, data, K,
                n_component=n_component, varFun=usedVarFun,
-               compare_comp=compare_comp, dist=dist)
+               compare_comp=compare_comp, dist=dist, weighted_avg=weighted_avg)
 
 
 
@@ -360,7 +370,8 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
                              varFun =anovaFtest,
                              dist =norm1_similarity,
                              infos =None,
-                             compare_comp :bool=False):
+                             compare_comp :bool=False,
+                             weighted_avg :bool=False):
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
 
@@ -373,15 +384,16 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
     Ks = [K] if type(K)==int else [k for k in K]
     Ks.sort(key=lambda x:x)
 
-    def divide_comp_var(level, idSP, n_component=n_component, compare_comp=compare_comp):
+    def divide_comp_var(level, idSP, n_component=n_component, compare_comp=compare_comp, weighted_avg=weighted_avg):
         childsID = getChilds[level][idSP]
         if len(childsID)==0: return 0
         if len(childsID)==1: return np.inf
 
         childs = [getSP(level+1, id) for id in childsID]
+        dtc = [center_distances(SP) for SP in childs] if weighted_avg else None
         if n_component==0:
             clusters = [[data[coor] for coor in child] for child in childs]
-            return varFun(clusters, dist=dist)
+            return varFun(clusters, dist=dist, dtc=dtc)
         
         if compare_comp:
             clusters = []
@@ -396,7 +408,7 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
                     TS /= TS.std(axis=0) + 1e-8
                     coeffs = pca.fit_transform(TS)
                 clusters.append(pca.components_ + pca.mean_)
-            return varFun(clusters, dist=dist)
+            return varFun(clusters, dist=dist, dtc=dtc)
 
         clusters_id = [i for i,child in enumerate(childs) for _ in range(len(child))]
         TS = np.array([data[coor] for child in childs for coor in child])
@@ -414,7 +426,7 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
         for i in range(len(clusters_id)):
             clusters[clusters_id[i]].append(coeffs[i])
         clusters = [np.array(cluster) for cluster in clusters]
-        return varFun(clusters, dist=dist)
+        return varFun(clusters, dist=dist, dtc=dtc)
 
     heap = MinHeap()
     for k in range(len(SPsDic[Ks_or[0]])):
