@@ -48,7 +48,7 @@ def compute_averages(clusters, dtc=None):
                 idtc[i] = x/norm
 
         averages = [0 for _ in range(len(clusters))]
-        for i in clusters:
+        for i in range(len(clusters)):
             averages[i] = clusters[i] * idtc[i]
         return averages
 
