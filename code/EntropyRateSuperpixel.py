@@ -1,6 +1,7 @@
 # EntropyRateSupexpixel
 # based on the work: https://github.com/mingyuliutw/EntropyRateSuperpixel
 
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 from classes import UnionFind, MinHeap
@@ -332,7 +333,8 @@ def find_superpixel(img: np.ndarray,
                     custom_similarity_function: SimFunType=None,
                     diagonnalyConnected:bool=True,
                     shutSizeMatter:int =0,
-                    newLambdaValue:int =0
+                    newLambdaValue:int =0,
+                    time_info:bool = False
                     )->list[list[tuple[int, int]]]:
     """
     - img: image to segment
@@ -346,6 +348,8 @@ def find_superpixel(img: np.ndarray,
         - (int,int), (int,int), bool -> float
     """
     # Init var
+    if time_info:
+        times = [time.time()]
     K_list = [K] if type(K)==int else [k for k in K]
     K_list.sort(key=lambda x:-x)
     if simFun=="custom":
@@ -426,11 +430,14 @@ def find_superpixel(img: np.ndarray,
                 y = j%M
                 superpixels[i].append((x,y))
         SPs_dic[K] = superpixels
+        if time_info:
+            times.append(time.time())
 
-    if len(K_list)==1:
-        return SPs_dic[K_list[0]]
+    res = SPs_dic[K_list[0]] if len(K_list)==1 else SPs_dic
+    if time_info:
+        return res, times
     else:
-        return SPs_dic
+        return res
 
 
 
