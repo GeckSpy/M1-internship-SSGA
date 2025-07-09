@@ -236,7 +236,7 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
               dist =norm1_similarity,
               compare_comp :bool =False,
               weighted_avg :bool =False,
-              info_time:list[float] = None):
+              starting_time:float = None):
     
     Ks = [K] if type(K)==int else [k for k in K]
     Ks.sort(key=lambda x:-x)
@@ -291,8 +291,9 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
             clusters[1].append(coeffs[i+len(group1)])
         clusters = [np.array(cluster) for cluster in clusters]
         return varFun(clusters, dist=dist, dtc=dtc)
-
-
+    
+    if starting_time!=None:
+        dic_time = {}
     SPs = [SP.copy() for SP in SPs_or]
     neighboors:list[set] = [neighboor.copy() for neighboor in neighboors_or]
 
@@ -320,12 +321,12 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
                 
                 nb_cc -=1
         SPsDic[K] = [[coor for coor in SP] for i,SP in enumerate(SPs) if existing[i]]
-        if info_time!=None:
-            info_time.append(time.time())
+        if starting_time!=None:
+            dic_time[K] = time.time() - starting_time
 
     res = SPsDic[Ks[0]] if len(Ks)==1 else SPsDic
-    if info_time!=None:
-        return res, info_time
+    if starting_time!=None:
+        return res, dic_time
     else:
         return res
 
@@ -339,7 +340,7 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
                             weighted_avg :bool=False,
                             info_time:bool = False):
     
-    times = [time.time()] if info_time else None
+    starting_time = time.time() if info_time else None
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
     if infos==None:
@@ -349,7 +350,7 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
     return merge_SPs(SPs_or, neighboors, data, K,
                n_component=n_component, varFun=usedVarFun,
                compare_comp=compare_comp, dist=dist, weighted_avg=weighted_avg,
-               info_times=times)
+               starting_time=starting_time)
 
 
 
@@ -406,7 +407,8 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
                              weighted_avg :bool=False,
                              info_time :bool = False):
     if info_time:
-        times = [time.time()]
+        starting_time = time.time()
+        dic_time = {}
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
 
@@ -481,10 +483,10 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
         
         SPsDic[K] = [[coor for coor in getSP(pair.first[0], pair.first[1])] for pair in heap.array]
         if info_time:
-            times.append(time.time())
+            dic_time[K] = time.time() - starting_time
 
     res = SPsDic[Ks[0]] if len(Ks)==1 else SPsDic
     if info_time:
-        return res, times
+        return res, dic_time
     else:
         return res

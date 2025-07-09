@@ -348,10 +348,12 @@ def find_superpixel(img: np.ndarray,
         - (int,int), (int,int), bool -> float
     """
     # Init var
-    if time_info:
-        times = [time.time()]
     K_list = [K] if type(K)==int else [k for k in K]
     K_list.sort(key=lambda x:-x)
+    if time_info:
+        starting_time = time.time()
+        dic_time = {}
+
     if simFun=="custom":
         CSF = custom_similarity_function
     else:
@@ -431,11 +433,11 @@ def find_superpixel(img: np.ndarray,
                 superpixels[i].append((x,y))
         SPs_dic[K] = superpixels
         if time_info:
-            times.append(time.time())
+            dic_time[K] = time.time() - starting_time
 
     res = SPs_dic[K_list[0]] if len(K_list)==1 else SPs_dic
     if time_info:
-        return res, times
+        return res, dic_time
     else:
         return res
 
