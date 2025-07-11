@@ -499,6 +499,7 @@ def create_overlay_borders(img: np.ndarray,
 
     borders = find_borders(SP, (n,m), exterior=exterior)
     if len(color)==1:
+        color = color[0]
         overlay = np.zeros((n,m), dtype=int)
     else:
         overlay = np.zeros((n,m, 4), dtype=int)
@@ -679,21 +680,34 @@ class SuperpixelClassifier:
     
 
     # ERS metrics
-    def undersegmentationLabelError(self, label, data_class):
-        liste = data_class[label][1]
-        data_set = set(liste)
+    def undersegmentationLabelErrorNo(self, label, data_class):
+        data_set = set(data_class[label][1])
         sum = 0
         for l in self.labels:
             self_set = set(self.data_class[l])
-            sum += len(self_set.intersection(data_set))
+            if len(self_set.intersection(data_set))!=0:
+                sum+= len(self_set - data_set)
         return sum
     
-    def undersegmentationError(self, data_class):
+    def undersegmentationLabelError(self, label, data_class):
+        data_set = set(data_class[label][1])
+        sum = 0
+        for SP in self.SPs:
+            if SP.guess==label:
+                self_set = set(SP.pixels)
+                if len(self_set.intersection(data_set))!=0:
+                    sum+= len(self_set - data_set)
+        return sum
+    
+    
+    def undersegmentationError(self, data_class, unique_overlap=True):
         sum = 0
         for l in self.labels:
-            sum += self.undersegmentationLabelError(l, data_class)
-        divisor = np.sum([len(item[1]) for key,item in data_class.keys() if key in self.labels])
-        return sum/divisor
+            if unique_overlap:
+                sum += self.undersegmentationLabelError(l, data_class)
+            else:
+                sum += self.undersegmentationLabelErrorNo(l, data_class)
+        return sum/len(self.pixels)
     
 
     def getSPs(self):
@@ -712,13 +726,10 @@ class SuperpixelClassifier:
         sum = 0
         neig = [(-1,-1),(-1,0),(-1,1),(0,-1), (0,0), (0, 1),(1,-1), (1,0), (1,1)]
         for x,y in gtBoundaries:
-            b = False
             for dx,dy in neig:
                 if 0<=x+dx<N and 0<=y+dy<M and selfBoundaries[x+dx,y+dy]==1:
-                    b=True
+                    sum+=1
                     break
-            if b:
-                sum+=1
         return sum/len(gtBoundaries)
         
     
