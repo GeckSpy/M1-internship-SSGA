@@ -57,6 +57,15 @@ def compute_averages(clusters, dtc=None):
         return averages
 
 
+def compute_false_greyscale_img(data:np.ndarray):
+    N,M,B = data.shape
+    pca = PCA(n_components=3)
+    pca.fit_transform([np.reshape(data[:,:,i], (N*M)) for i in range(B)])
+    pca_data = np.array([np.reshape(pca.components_[i], (N, M)) for i in range(3)])
+    return np.array([[[pca_data[b,i,j] for b in range(3)] for j in range(M)] for i in range(N)])
+
+
+
 ### classic clusters separability/variability metrics
 def anovaFtest(clusters:list[list[np.ndarray]], dist=norm1_similarity, dtc=None)->float:
     # High = well separated
