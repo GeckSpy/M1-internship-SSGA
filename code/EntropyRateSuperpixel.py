@@ -647,6 +647,26 @@ class SuperpixelClassifier:
             jacc, weight = self.jaccard(gt, data_class, l, returnWeight=True)
             sum += weight*jacc
         return sum/(len(self.labels)*len(self.pixels))
+    
+
+    # ERS metrics
+    def undersegmentationLabelError(self, label, data_class):
+        liste = data_class[label][1]
+        data_set = set(liste)
+        sum = 0
+        for l in self.labels:
+            self_set = set(self.data_class[label])
+            sum += len(self_set.intersection(data_set))
+        return sum
+    
+    def undersegmentationError(self, data_class):
+        sum = 0
+        for l in self.labels:
+            sum += self.undersegmentationLabelError(l, data_class)
+        divisor = np.sum([len(item[1]) for key,item in data_class.keys() if key in self.labels])
+        return sum/divisor
+    
+
 
 
 

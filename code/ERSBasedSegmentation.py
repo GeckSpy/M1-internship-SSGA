@@ -490,3 +490,7 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
         return res, dic_time
     else:
         return res
+
+
+
+### Ground-Truth segmentation
