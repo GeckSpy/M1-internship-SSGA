@@ -498,7 +498,10 @@ def create_overlay_borders(img: np.ndarray,
         n,m,_ = img.shape
 
     borders = find_borders(SP, (n,m), exterior=exterior)
-    overlay = np.zeros((n,m, 4), dtype=int)
+    if len(color)==1:
+        overlay = np.zeros((n,m), dtype=int)
+    else:
+        overlay = np.zeros((n,m, 4), dtype=int)
     for border in borders:
         for x,y in border:
             overlay[x,y] = color
@@ -692,10 +695,28 @@ class SuperpixelClassifier:
         divisor = np.sum([len(item[1]) for key,item in data_class.keys() if key in self.labels])
         return sum/divisor
     
-    
+
+    def getSPs(self):
+        return [SP.pixels for SP in self.SPs]
+
     def boundaryRecall(self, gt):
+        N,M = gt.shape
+        gtSPs = groundtruthSegmentation(gt)
+        selfSPs = self.getSPs()
 
+        gtBoundaries = []
+        for SP in gtSPs:
+            gtBoundaries += find_border(SP, gt.shape)
 
+        selfBoundaries = create_overlay_borders(gt, selfSPs, color=[1])
+        sum = 0
+        neig = [(-1,-1),(-1,0),(-1,1),(0,-1), (0,0), (0, 1),(1,-1), (1,0), (1,1)]
+        for x,y in gtBoundaries:
+            for dx,dy in neig:
+                if 0<=x+dx<N and 0<=y+dy<M and selfBoundaries[x+dx,y+dy]==1:
+                    sum+=1
+        return sum/len(gtBoundaries)
+        
     
 
 
