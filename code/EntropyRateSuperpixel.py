@@ -712,9 +712,13 @@ class SuperpixelClassifier:
         sum = 0
         neig = [(-1,-1),(-1,0),(-1,1),(0,-1), (0,0), (0, 1),(1,-1), (1,0), (1,1)]
         for x,y in gtBoundaries:
+            b = False
             for dx,dy in neig:
                 if 0<=x+dx<N and 0<=y+dy<M and selfBoundaries[x+dx,y+dy]==1:
-                    sum+=1
+                    b=True
+                    break
+            if b:
+                sum+=1
         return sum/len(gtBoundaries)
         
     
