@@ -138,3 +138,35 @@ class MinHeap:
                 print(nb_space*"  ", self.array[i])
                 aux(self.right(i), nb_space+1)
         aux(0, 0)
+
+
+
+
+
+class Graph:
+    def __init__(self, n):
+        self.n = n
+        self.edges = [set() for _ in range(n)]
+
+    def add_edge(self, u, v):
+        self.edges[u].add(v)
+        self.edges[v].add(u)
+
+    def composante_connexe(self):
+        cc = [-1 for _ in range(self.n)]
+
+        def parcour(cc_id, todo:list):
+            while len(todo)!=0:
+                u = todo.pop(0)
+                if cc[u]==-1:
+                    cc[u] = cc_id
+                    todo = todo + list(self.edges[u])
+                else:   
+                    todo = todo
+
+        cc_id = -1
+        for i in range(self.n):
+            if cc[i]==-1:
+                cc_id += 1
+                parcour(cc_id, [i])
+        return cc
