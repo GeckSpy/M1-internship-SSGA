@@ -4,7 +4,7 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from classes import UnionFind, MinHeap
+from classes import UnionFind, MinHeap, Graph
 from typing import Callable, Tuple
 
 
@@ -515,6 +515,32 @@ def plot_img_with_borders(img:np.ndarray, SP:list[list[tuple[int, int]]], color=
 
 
 ### Superpixel classes for data result
+def groundtruthSegmentation(gt:np.ndarray):
+    N,M = gt.shape
+    graph = Graph(N*M)
+    maxi = max(N,M)
+    for i in range(N):
+        for j in range(M):
+            u = i*maxi + j
+
+            if i+1<N and gt[i,j]==gt[i+1,j]:
+                graph.add_edge(u, (i+1)*maxi + j)
+            if j+1<M and gt[i,j]==gt[i,j+1]:
+                graph.add_edge(u, i*maxi + j+1)
+
+    cc = graph.composante_connexe()
+    K = max(cc)+1
+    SPs = [[] for _ in range(K)]
+    img = np.zeros((N,M), dtype=int)
+
+    for i in range(N):
+        for j in range(M):
+            u = i*maxi + j
+            img[i,j] = cc[u]
+            SPs[cc[u]].append((i,j))
+    return SPs
+
+
 
 class Superpixel:
     def __init__(self, liste, labels, gt, counting0=True):
@@ -655,7 +681,7 @@ class SuperpixelClassifier:
         data_set = set(liste)
         sum = 0
         for l in self.labels:
-            self_set = set(self.data_class[label])
+            self_set = set(self.data_class[l])
             sum += len(self_set.intersection(data_set))
         return sum
     
@@ -665,6 +691,11 @@ class SuperpixelClassifier:
             sum += self.undersegmentationLabelError(l, data_class)
         divisor = np.sum([len(item[1]) for key,item in data_class.keys() if key in self.labels])
         return sum/divisor
+    
+    
+    def boundaryRecall(self, gt):
+
+
     
 
 
