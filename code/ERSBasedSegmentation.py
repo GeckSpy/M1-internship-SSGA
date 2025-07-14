@@ -157,13 +157,14 @@ def AverageDist(components:list[list[np.ndarray]], dist=norm1_similarity, dtc=No
     return distances/count
 
 
-def stdFtestnorm1(clusters:list, dist=(1,""), dtc=None):
+def stdFtestnorm1(clusters:list, dist=(1,""), dtc=None, averages=None):
     # High = well separated
     coeff, _ = dist
     K = len(clusters)
     sizes = [len(cluster) for cluster in clusters]
     n = np.sum(sizes)
-    averages = compute_averages(clusters, dtc=dtc)
+    if type(averages)==type(None):
+        averages = compute_averages(clusters, dtc=dtc)
 
     if dist[1]=="exp":
         stds = [normalize(np.exp(np.std(cluster, axis=0))) for cluster in clusters]
@@ -271,18 +272,17 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
     SPs = [SP.copy() for SP in SPs_or]
     neighboors:list[set] = [neighboor.copy() for neighboor in neighboors_or]
     TSs = [[trainData[coor] for coor in SP] for SP in SPs]
-    averages = compute_averages(TSs)
+    averages = compute_averages(TSs, dtc=None)
 
 
-    def simFun(group1, group2, n_component=n_component, compare_comp=compare_comp):
-        dtc = [center_distances(SP) for SP in [group1, group2]] if weighted_avg else None
+    def simFun(k1, k2, n_component=n_component, compare_comp=compare_comp):
+        dtc = [center_distances(SP) for SP in [SPs[k1], SPs[k2]]] if weighted_avg else None
         if n_component==0:
-            clusters = [[trainData[coor] for coor in SP] for SP in [group1, group2]]
-            return varFun(clusters, dist=dist, dtc=dtc)
+            return varFun([TSs[k1],TSs[k2]], dist=dist, dtc=dtc, averages=[averages[k1],averages[k2]])
         if compare_comp:
             clusters = []
-            for group in [group1, group2]:
-                TS = np.array([trainData[coor] for coor in group])
+            for k in [k1, k2]:
+                TS = np.array(TSs[k])
                 n_ = min(n_component, min(TS.shape))
                 pca = PCA(n_components=n_)
                 try:
@@ -294,7 +294,7 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
                 clusters.append(pca.components_ + pca.mean_)
             return varFun(clusters, dist=dist, dtc=dtc)
             
-        TS = np.array([trainData[coor] for group in [group1, group2] for coor in group])
+        TS = np.array(TSs[k1] + TSs[k2])
         n_ = min(n_component, min(TS.shape))
         pca = PCA(n_components=n_)
         try:
@@ -303,20 +303,19 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
             TS -= TS.mean(axis=0)
             TS /= TS.std(axis=0) + 1e-8
             coeffs = pca.fit_transform(TS)
-        
 
         clusters = [[], []]
-        for i in range(len(group1)):
+        for i in range(len(SPs[k1])):
             clusters[0].append(coeffs[i])
-        for i in range(len(group2)):
-            clusters[1].append(coeffs[i+len(group1)])
+        for i in range(len(SPs[k2])):
+            clusters[1].append(coeffs[i+len(SPs[k1])])
         clusters = [np.array(cluster) for cluster in clusters]
-        return varFun(clusters, dist=dist, dtc=dtc)
+        return varFun(clusters, dist=dist, dtc=dtc, averages=averages)
     
 
     nb_cc = len(SPs)
     existing = [True for _ in range(nb_cc)]
-    edges = [(u, v, simFun(SPs[u], SPs[v])) for u in range(nb_cc)
+    edges = [(u, v, simFun(u, v)) for u in range(nb_cc)
                 for v in neighboors[u] if u<v]
     edges.sort(key=lambda x:x[2])
     
@@ -327,6 +326,9 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
             if existing[k1] and existing[k2]:
                 existing[k2] = False
                 SPs[k1] += SPs[k2]
+                TSs[k1] += TSs[k2]
+                averages[k1] = np.average(TSs[k1], axis=0)
+                
                 SPs[k2] = None
                 neighboors[k1] = neighboors[k1].union(neighboors[k2])
                 neighboors[k2] = None
@@ -334,7 +336,7 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
                 edges = [(u,v,w) for u,v,w in edges if u!=k1 and v!=k2 and u!=k2 and v!=k1 and existing[u] and existing[v]]
                 for v in neighboors[k1]:
                     if v!=k1 and existing[v]:
-                        insert_sorted(edges, (k1,v, simFun(SPs[k1], SPs[v])))
+                        insert_sorted(edges, (k1,v, simFun(k1, v)))
                 
                 nb_cc -=1
         SPsDic[K] = [[coor for coor in SP] for i,SP in enumerate(SPs) if existing[i]]
@@ -346,7 +348,7 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
         return res, dic_time
     else:
         return res
-
+    
 
 def mergedBasedSegmentation(data :np.ndarray, K :int,
                             n_component :int=0,
@@ -368,8 +370,6 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
                n_component=n_component, varFun=usedVarFun,
                compare_comp=compare_comp, dist=dist, weighted_avg=weighted_avg,
                starting_time=starting_time)
-
-
 
 
 ### Multilevel Algo
@@ -479,7 +479,6 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
             clusters[clusters_id[i]].append(coeffs[i])
         clusters = [np.array(cluster) for cluster in clusters]
         return varFun(clusters, dist=dist, dtc=dtc)
-    
 
     heap = MinHeap()
     for k in range(len(SPsDic[Ks_or[0]])):
@@ -513,7 +512,6 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
 def globalSPsMerge(
         data :np.ndarray,
         SPs: list[list[tuple[int,int]]],
-        nb_classes :int,
         n_component :int=0,
         usedVarFun=anovaFtest,
         dist=norm1_similarity,
