@@ -266,6 +266,14 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
         l.insert(left, elt)
 
 
+    if starting_time!=None:
+        dic_time = {}
+    SPs = [SP.copy() for SP in SPs_or]
+    neighboors:list[set] = [neighboor.copy() for neighboor in neighboors_or]
+    TSs = [[trainData[coor] for coor in SP] for SP in SPs]
+    averages = compute_averages(TSs)
+
+
     def simFun(group1, group2, n_component=n_component, compare_comp=compare_comp):
         dtc = [center_distances(SP) for SP in [group1, group2]] if weighted_avg else None
         if n_component==0:
@@ -305,10 +313,6 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
         clusters = [np.array(cluster) for cluster in clusters]
         return varFun(clusters, dist=dist, dtc=dtc)
     
-    if starting_time!=None:
-        dic_time = {}
-    SPs = [SP.copy() for SP in SPs_or]
-    neighboors:list[set] = [neighboor.copy() for neighboor in neighboors_or]
 
     nb_cc = len(SPs)
     existing = [True for _ in range(nb_cc)]
@@ -475,6 +479,7 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
             clusters[clusters_id[i]].append(coeffs[i])
         clusters = [np.array(cluster) for cluster in clusters]
         return varFun(clusters, dist=dist, dtc=dtc)
+    
 
     heap = MinHeap()
     for k in range(len(SPsDic[Ks_or[0]])):
