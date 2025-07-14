@@ -4,6 +4,19 @@ from skimage import color
 from classes import MinHeap
 
 
+from skimage.segmentation import slic
+from skimage.util import img_as_float
+
+def SLIC(data, K, compactness=10):
+    n,m = data.shape[:2]
+    segments = slic(img_as_float(data), n_segments=K, compactness=compactness, start_label=0)
+    SPs = [[] for _ in range(np.max(segments)+1)]
+    for i in range(n):
+        for j in range(m):
+            SPs[segments[i,j]].append((i,j))
+    return SPs
+
+
 def rgb_to_lab_image(img):
     """
     Converts an RGB image to LAB using skimage.
@@ -62,6 +75,7 @@ def run_snic(lv, av, bv, width, height, innumk, compactness):
         heapq.heappush(pq, (0, i, k))  # (distance, index, label)
 
     CONNECTIVITY = 4
+    #CONNECTIVITY = 8
     M = compactness
     invwt = (M * M * numk) / float(sz)
 
@@ -86,6 +100,7 @@ def run_snic(lv, av, bv, width, height, innumk, compactness):
                 if 0 <= xx < width and 0 <= yy < height:
                     ii = i + dn8[p]
                     if 0 <= ii < sz and labels[ii] < 0:
+                        """
                         ldiff = kl[k] - lv[ii] * ksize[k]
                         adiff = ka[k] - av[ii] * ksize[k]
                         bdiff = kb[k] - bv[ii] * ksize[k]
@@ -95,6 +110,24 @@ def run_snic(lv, av, bv, width, height, innumk, compactness):
                         colordist = ldiff**2 + adiff**2 + bdiff**2
                         xydist = xdiff**2 + ydiff**2
                         slicdist = (colordist + xydist * invwt) / (ksize[k]**2)
+                        """
+
+                        lmean = kl[k] / ksize[k]
+                        amean = ka[k] / ksize[k]
+                        bmean = kb[k] / ksize[k]
+                        xmean = kx[k] / ksize[k]
+                        ymean = ky[k] / ksize[k]
+
+                        ldiff = lmean - lv[ii]
+                        adiff = amean - av[ii]
+                        bdiff = bmean - bv[ii]
+                        xdiff = xmean - xx
+                        ydiff = ymean - yy
+
+                        colordist = ldiff**2 + adiff**2 + bdiff**2
+                        spatialdist = xdiff**2 + ydiff**2
+                        slicdist = colordist + invwt * spatialdist
+
 
                         packed_ii = (xx << 16) | yy
                         heapq.heappush(pq, (slicdist, packed_ii, k))
@@ -136,5 +169,11 @@ def snic_segmentation(image, num_superpixels=100, compactness=10.0):
     bv = bvec.flatten()
     
     labels, numk = run_snic(lv, av, bv, width, height, num_superpixels, compactness)
-    return labels, numk
+
+    SPs = [[] for _ in range(numk)]
+    for i in range(height):
+        for j in range(width):
+            SPs[labels[i,j]].append((i,j))
+
+    return SPs
 
