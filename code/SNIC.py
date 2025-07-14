@@ -116,6 +116,25 @@ def run_snic(lv, av, bv, width, height, innumk, compactness):
 
 
 
-from MyDataset import IndianPines
-img = IndianPines["data"][:,:,[1,2,3]]
-N,M,B = img.shape
+def snic_segmentation(image, num_superpixels=100, compactness=10.0):
+    """
+    Main interface for SNIC segmentation.
+    
+    Parameters:
+    - image: RGB image as numpy array (H, W, 3), dtype=uint8
+    - num_superpixels: desired number of superpixels
+    - compactness: tradeoff parameter between color and spatial proximity
+    
+    Returns:
+    - labels: label map of shape (H, W)
+    - num_actual_superpixels: number of seeds used
+    """
+    height, width = image.shape[:2]
+    lvec, avec, bvec = rgb_to_lab_image(image)
+    lv = lvec.flatten()
+    av = avec.flatten()
+    bv = bvec.flatten()
+    
+    labels, numk = run_snic(lv, av, bv, width, height, num_superpixels, compactness)
+    return labels, numk
+
