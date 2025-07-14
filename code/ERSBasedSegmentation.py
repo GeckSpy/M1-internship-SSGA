@@ -310,7 +310,7 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
         for i in range(len(SPs[k2])):
             clusters[1].append(coeffs[i+len(SPs[k1])])
         clusters = [np.array(cluster) for cluster in clusters]
-        return varFun(clusters, dist=dist, dtc=dtc, averages=averages)
+        return varFun(clusters, dist=dist, dtc=dtc)
     
 
     nb_cc = len(SPs)
