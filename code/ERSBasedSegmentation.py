@@ -67,12 +67,16 @@ def compute_false_greyscale_img(data:np.ndarray):
 
 
 ### classic clusters separability/variability metrics
-def anovaFtest(clusters:list[list[np.ndarray]], dist=norm1_similarity, dtc=None)->float:
+def anovaFtest(clusters:list[list[np.ndarray]],
+               averages:list[np.ndarray] = None,
+               dist=norm1_similarity,
+               dtc=None)->float:
     # High = well separated
     K = len(clusters)
     sizes = [len(cluster) for cluster in clusters]
     n = np.sum(sizes)
-    averages = compute_averages(clusters, dtc=dtc)
+    if type(averages)==type(None):
+        averages = compute_averages(clusters, dtc=dtc)
     average = np.average([ts for cluster in clusters for ts in cluster], axis=0)
 
     BGV = 0
@@ -193,7 +197,7 @@ def stdFtestnorm1(clusters:list, dist=(1,""), dtc=None):
 
 
 
-### Merged-Based algorithm
+### Merged-Based Neighborhood algorithm
 from scipy.optimize import root_scalar
 def computeKor(N:int, M:int, n_component:int=0,
                P_avg:float=35, gamma:float=0.15)->int:
@@ -364,8 +368,7 @@ def mergedBasedSegmentation(data :np.ndarray, K :int,
 
 
 
-# Multilevel Algo
-### Compute information for multileve-based algorithm
+### Multilevel Algo
 def compute_Ks(N:int, M:int, averageSPSize:int=5)->list[int]:
     Ksmax = int(N*M/averageSPSize)
     Ks = [20, 50]
@@ -406,7 +409,6 @@ def createMultilevelInfo(data:np.ndarray, Ks:list[int]):
     return SPsDic, getSP, getParent, getChilds
 
 
-### Multilevel Main algorithm
 def multilevelSPsegmentation(data :np.ndarray, K:int,
                              n_component :int=0,
                              varFun =anovaFtest,
@@ -499,3 +501,28 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
         return res, dic_time
     else:
         return res
+
+
+
+### Merge-SP algorithm
+def globalSPsMerge(
+        data :np.ndarray,
+        SPs: list[list[tuple[int,int]]],
+        nb_classes :int,
+        n_component :int=0,
+        usedVarFun=anovaFtest,
+        dist=norm1_similarity,
+        compare_comp=False,
+        weighted_avg :bool=False,
+        info_time:bool = False):
+    
+    starting_time = time.time() if info_time else None
+    if n_component==0 and compare_comp:
+        raise ValueError("Cannot compare PCA component for <=0 components")
+    
+    neighboors = [set([j for j in range(len(SPs)) if j>i]) for i in range(len(SPs))]
+
+    return merge_SPs(SPs, neighboors, data, nb_classes,
+               n_component=n_component, varFun=usedVarFun,
+               compare_comp=compare_comp, dist=dist, weighted_avg=weighted_avg,
+               starting_time=starting_time)
