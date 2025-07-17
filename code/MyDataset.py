@@ -304,3 +304,18 @@ PaviaCenterLambdaCoeff = {
 for size, dic in PaviaCenterLambdaCoeff.items():
     for K in dic.keys():
         dic[K] = np.array(dic[K])
+
+
+
+### SLIC, SNIC, ERS hyperparameter value
+hyperparameterValue = {
+    IndianPines["name"]:{
+        50: [41, 0.0049],
+        100: [35, 0.0018],
+        200: [24, 0.0012],
+        300: [26, 0.0011],
+        400: [26, 0.0009],
+        500: [23, 0.0011],
+        600: [26, 0.0011]
+    }
+}
