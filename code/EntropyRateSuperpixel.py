@@ -368,6 +368,13 @@ def find_superpixel(img: np.ndarray,
         else:
             lambda_model = nameToLambdaModel[simFun]
             lambda_coef = lambda_model(K_list[0], N,M)
+    try:
+        if len(lambda_coef) == len(K_list):
+            lambda_model = {K_list[i]:lambda_coef[i] for i in range(len(K_list))}
+    except IndexError:
+        raise IndexError("lambda_coeff length and K lenght does not match")
+    except TypeError:
+        pass
 
 
     # Initialisation
@@ -401,7 +408,7 @@ def find_superpixel(img: np.ndarray,
     # Main loop
     for K in K_list:
         if updateLambda and lambda_model!=None:
-            lambda_coef = lambda_model(K,N,M)
+            lambda_coef = lambda_model[K] if type(lambda_model)==dict else lambda_model(K,N,M)
             lambda_balancing = lambda_coef * balancing
 
         hasShutSize = False
