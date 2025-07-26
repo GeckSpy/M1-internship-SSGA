@@ -370,8 +370,12 @@ def find_superpixel(img: np.ndarray,
             lambda_coef = lambda_model(K_list[0], N,M)
     try:
         if len(lambda_coef) == len(K_list):
-            lambda_model = {K_list[i]:lambda_coef[i] for i in range(len(K_list))}
+            lambda_list = [l for l in lambda_coef]
+            lambda_list.sort(key=lambda x:-x)
+            lambda_model = {K_list[i]:lambda_list[i] for i in range(len(K_list))}
             lambda_coef = lambda_model[K_list[0]]
+        else:
+            raise IndexError
     except IndexError:
         raise IndexError("lambda_coeff length and K lenght does not match")
     except TypeError:
