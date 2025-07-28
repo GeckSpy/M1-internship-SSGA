@@ -28,7 +28,7 @@ def rgb_to_lab_image(img):
     return lab[:, :, 0], lab[:, :, 1], lab[:, :, 2]  # L, A, B
 
 
-def find_seeds(width, height, numk):
+def find_suare_seeds(width, height, numk):
     sz = width * height
     gridstep = int(np.sqrt(sz / numk) + 0.5)
     halfstep = gridstep // 2
@@ -53,14 +53,46 @@ def find_seeds(width, height, numk):
     return numk, kx, ky
 
 
+def find_hexagonal_seeds(height, width, K):
+    hex_area = (height * width) / K
+    r = np.sqrt((2 * hex_area) / (3 * np.sqrt(3)))
 
-def run_snic(lv, av, bv, width, height, innumk, compactness):
+    dx = 3 * r / 2
+    dy = np.sqrt(3) * r
+    kx, ky = [], []
+
+    y = r
+    row = 0
+    while y < height:
+        offset_x = r + (row % 2) * (3 * r / 4)
+        x = offset_x
+        while x < width:
+            kx.append(int(x))
+            ky.append(int(y))
+            x += dx
+        y += dy
+        row += 1
+
+    return len(kx), kx, ky
+
+
+def find_seeds(N,M,K, shape="square"):
+    if shape=="square":
+        return find_suare_seeds(N,M,K)
+    elif shape=="hexagon":
+        return find_hexagonal_seeds(N,M,K)
+    else:
+        raise ValueError("attribute shape must be either 'square' or 'hexagon'")
+
+
+
+def run_snic(lv, av, bv, width, height, innumk, compactness, shape="square"):
     sz = width * height
     dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
     dy8 = [0, -1, 0, 1, -1, -1, 1, 1]
     dn8 = [-1, -width, 1, width, -1 - width, 1 - width, 1 + width, -1 + width]
     
-    numk, cx, cy = find_seeds(width, height, innumk)
+    numk, cx, cy = find_seeds(width, height, innumk, shape=shape)
     labels = -1 * np.ones(sz, dtype=np.int32)
     kl = np.zeros(numk)
     ka = np.zeros(numk)
@@ -150,7 +182,7 @@ def run_snic(lv, av, bv, width, height, innumk, compactness):
 
 
 
-def snic_segmentation(image, num_superpixels=100, compactness=10.0):
+def snic_segmentation(image, num_superpixels=100, compactness=10.0, shape="square"):
     """
     Main interface for SNIC segmentation.
     
@@ -169,7 +201,7 @@ def snic_segmentation(image, num_superpixels=100, compactness=10.0):
     av = avec.flatten()
     bv = bvec.flatten()
     
-    labels, numk = run_snic(lv, av, bv, width, height, num_superpixels, compactness)
+    labels, numk = run_snic(lv, av, bv, width, height, num_superpixels, compactness, shape=shape)
 
     SPs = [[] for _ in range(numk)]
     for i in range(height):
