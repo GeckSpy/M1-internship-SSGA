@@ -7,7 +7,7 @@ from skimage.util import img_as_float
 from EntropyRateSuperpixel import norm1_similarity
 
 
-
+# SLIC algorithm
 def SLIC(data, K, compactness=10):
     n,m = data.shape[:2]
     segments = slic(img_as_float(data), n_segments=K, compactness=compactness, start_label=0)
@@ -18,6 +18,7 @@ def SLIC(data, K, compactness=10):
     return SPs
 
 
+# SNIC algorithm
 def rgb_to_lab_image(img):
     """
     Converts an RGB image to LAB using skimage.
@@ -28,6 +29,7 @@ def rgb_to_lab_image(img):
     return lab[:, :, 0], lab[:, :, 1], lab[:, :, 2]  # L, A, B
 
 
+### Seeds functions
 def find_suare_seeds(width, height, numk):
     sz = width * height
     gridstep = int(np.sqrt(sz / numk) + 0.5)
@@ -85,7 +87,7 @@ def find_seeds(N,M,K, shape="square"):
         raise ValueError("attribute shape must be either 'square' or 'hexagon'")
 
 
-
+### main function
 def run_snic(lv, av, bv, width, height, innumk, compactness, shape="square"):
     sz = width * height
     dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
@@ -133,18 +135,6 @@ def run_snic(lv, av, bv, width, height, innumk, compactness, shape="square"):
                 if 0 <= xx < width and 0 <= yy < height:
                     ii = i + dn8[p]
                     if 0 <= ii < sz and labels[ii] < 0:
-                        """
-                        ldiff = kl[k] - lv[ii] * ksize[k]
-                        adiff = ka[k] - av[ii] * ksize[k]
-                        bdiff = kb[k] - bv[ii] * ksize[k]
-                        xdiff = kx[k] - xx * ksize[k]
-                        ydiff = ky[k] - yy * ksize[k]
-
-                        colordist = ldiff**2 + adiff**2 + bdiff**2
-                        xydist = xdiff**2 + ydiff**2
-                        slicdist = (colordist + xydist * invwt) / (ksize[k]**2)
-                        """
-
                         lmean = kl[k] / ksize[k]
                         amean = ka[k] / ksize[k]
                         bmean = kb[k] / ksize[k]
@@ -210,99 +200,3 @@ def snic_segmentation(image, num_superpixels=100, compactness=10.0, shape="squar
 
     return SPs
 
-
-
-
-
-
-def runMySNIC(data, numk, compactness, cx, cy, simFun):
-    height, width, B = data.shape
-
-    CONNECTIVITY = 4
-    #CONNECTIVITY = 8
-    sz = width * height
-    invwt = (compactness**2 * numk) / float(sz)
-
-    sz = width * height
-    dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
-    dy8 = [0, -1, 0, 1, -1, -1, 1, 1]
-    dn8 = [-1, -width, 1, width, -1 - width, 1 - width, 1 + width, -1 + width]
-    
-    labels = -1 * np.ones(sz, dtype=np.int32)
-
-    TSs = np.array([data[:,:,b].flatten() for b in range(B)])
-    ks = np.zeros((B,numk))
-
-    kx = np.zeros(numk)
-    ky = np.zeros(numk)
-    ksize = np.zeros(numk)
-
-    # Priority queue
-    pq = []
-    for k in range(numk):
-        i = (cx[k] << 16) | cy[k]
-        heapq.heappush(pq, (0, i, k))  # (distance, index, label)
-
-    while pq:
-        d, packed_i, k = heapq.heappop(pq)
-        x = (packed_i >> 16) & 0xffff
-        y = packed_i & 0xffff
-        i = y * width + x
-
-        if labels[i] < 0:
-            labels[i] = k
-            for b in range(B):
-                ks[b] += TSs[b][i]
-
-            kx[k] += x
-            ky[k] += y
-            ksize[k] += 1.0
-
-            for p in range(CONNECTIVITY):
-                xx = x + dx8[p]
-                yy = y + dy8[p]
-                if 0 <= xx < width and 0 <= yy < height:
-                    ii = i + dn8[p]
-                    if 0 <= ii < sz and labels[ii] < 0:
-
-                        averages = [ks[b][k]/ksize[k] for b in range(B)]
-                        colordist = simFun(averages, TSs[:,ii])
-
-                        xmean = kx[k] / ksize[k]
-                        ymean = ky[k] / ksize[k]
-                        xdiff = xmean - xx
-                        ydiff = ymean - yy
-                        spatialdist = xdiff**2 + ydiff**2
-
-                        slicdist = colordist + invwt * spatialdist
-
-                        packed_ii = (xx << 16) | yy
-                        heapq.heappush(pq, (slicdist, packed_ii, k))
-
-    # Fill in any unlabelled pixels
-    if labels[0] < 0:
-        labels[0] = 0
-    for y in range(1, height):
-        for x in range(1, width):
-            i = y * width + x
-            if labels[i] < 0:
-                if labels[i - 1] >= 0:
-                    labels[i] = labels[i - 1]
-                elif labels[i - width] >= 0:
-                    labels[i] = labels[i - width]
-
-    return labels.reshape((height, width)), numk
-
-
-def mySNIC(data, K, compactness=10, simFun=norm1_similarity):
-    height, width, B = data.shape
-    numk, cx, cy = find_seeds(height, width, K)
-
-    labels, numk = runMySNIC(data, numk, compactness, cx, cy, simFun=simFun)
-
-    SPs = [[] for _ in range(numk)]
-    for i in range(height):
-        for j in range(width):
-            SPs[labels[i,j]].append((i,j))
-
-    return SPs
