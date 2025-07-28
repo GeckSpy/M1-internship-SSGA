@@ -46,9 +46,13 @@ def standardize_data(data:np.ndarray):
     """
     Standardize the data
     """
-    N,M,B = data.shape
-    new_data = data.reshape(N*M, B)
-    return StandardScaler().fit(new_data).transform(new_data).reshape(N,M,B)
+    try:
+        N,M,B = data.shape
+        new_data = data.reshape(N*M, B)
+        return StandardScaler().fit(new_data).transform(new_data).reshape(N,M,B)
+    except ValueError:
+        N,B = data.shape
+        return StandardScaler().fit(data).transform(data)
 
 
 def load_dataset(path :str,

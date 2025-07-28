@@ -1,11 +1,12 @@
 import numpy as np
 import heapq
 from skimage import color
-from classes import MinHeap
-
 
 from skimage.segmentation import slic
 from skimage.util import img_as_float
+from EntropyRateSuperpixel import norm1_similarity
+
+
 
 def SLIC(data, K, compactness=10):
     n,m = data.shape[:2]
@@ -177,3 +178,99 @@ def snic_segmentation(image, num_superpixels=100, compactness=10.0):
 
     return SPs
 
+
+
+
+
+
+def runMySNIC(data, numk, compactness, cx, cy, simFun):
+    height, width, B = data.shape
+
+    CONNECTIVITY = 4
+    #CONNECTIVITY = 8
+    sz = width * height
+    invwt = (compactness**2 * numk) / float(sz)
+
+    sz = width * height
+    dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
+    dy8 = [0, -1, 0, 1, -1, -1, 1, 1]
+    dn8 = [-1, -width, 1, width, -1 - width, 1 - width, 1 + width, -1 + width]
+    
+    labels = -1 * np.ones(sz, dtype=np.int32)
+
+    TSs = np.array([data[:,:,b].flatten() for b in range(B)])
+    ks = np.zeros((B,numk))
+
+    kx = np.zeros(numk)
+    ky = np.zeros(numk)
+    ksize = np.zeros(numk)
+
+    # Priority queue
+    pq = []
+    for k in range(numk):
+        i = (cx[k] << 16) | cy[k]
+        heapq.heappush(pq, (0, i, k))  # (distance, index, label)
+
+    while pq:
+        d, packed_i, k = heapq.heappop(pq)
+        x = (packed_i >> 16) & 0xffff
+        y = packed_i & 0xffff
+        i = y * width + x
+
+        if labels[i] < 0:
+            labels[i] = k
+            for b in range(B):
+                ks[b] += TSs[b][i]
+
+            kx[k] += x
+            ky[k] += y
+            ksize[k] += 1.0
+
+            for p in range(CONNECTIVITY):
+                xx = x + dx8[p]
+                yy = y + dy8[p]
+                if 0 <= xx < width and 0 <= yy < height:
+                    ii = i + dn8[p]
+                    if 0 <= ii < sz and labels[ii] < 0:
+
+                        averages = [ks[b][k]/ksize[k] for b in range(B)]
+                        colordist = simFun(averages, TSs[:,ii])
+
+                        xmean = kx[k] / ksize[k]
+                        ymean = ky[k] / ksize[k]
+                        xdiff = xmean - xx
+                        ydiff = ymean - yy
+                        spatialdist = xdiff**2 + ydiff**2
+
+                        slicdist = colordist + invwt * spatialdist
+
+                        packed_ii = (xx << 16) | yy
+                        heapq.heappush(pq, (slicdist, packed_ii, k))
+
+    # Fill in any unlabelled pixels
+    if labels[0] < 0:
+        labels[0] = 0
+    for y in range(1, height):
+        for x in range(1, width):
+            i = y * width + x
+            if labels[i] < 0:
+                if labels[i - 1] >= 0:
+                    labels[i] = labels[i - 1]
+                elif labels[i - width] >= 0:
+                    labels[i] = labels[i - width]
+
+    return labels.reshape((height, width)), numk
+
+
+def mySNIC(data, K, compactness=10, simFun=norm1_similarity):
+    height, width, B = data.shape
+    numk, cx, cy = find_seeds(height, width, K)
+
+    labels, numk = runMySNIC(data, numk, compactness, cx, cy, simFun=simFun)
+
+    SPs = [[] for _ in range(numk)]
+    for i in range(height):
+        for j in range(width):
+            SPs[labels[i,j]].append((i,j))
+
+    return SPs
