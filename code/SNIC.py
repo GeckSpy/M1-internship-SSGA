@@ -276,7 +276,7 @@ def myRBGSNIC(data, K, compactness, shape="square"):
 
 
 
-def mySNIC(data, K, compactness, shape="square", simFun=norm2_similarity):
+def mySNIC(data, K, compactness=0, shape="square", simFun=norm2_similarity):
     height, width, B = data.shape
     sz = width * height
     dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
@@ -316,18 +316,20 @@ def mySNIC(data, K, compactness, shape="square", simFun=norm2_similarity):
             for p in range(CONNECTIVITY):
                 xx = x + dx8[p]
                 yy = y + dy8[p]
-                if 0 <= xx < width and 0 <= yy < height:
+                if 0 <= xx < height and 0 <= yy < width:
                     if labels[xx,yy]<0:
                         means = np.array([ks[k][b]/ksize[k] for b in range(B)])
                         colordist = simFun(means, data[xx,yy,:])
 
-                        xmean = kx[k] / ksize[k]
-                        ymean = ky[k] / ksize[k]
-                        xdiff = xmean - xx
-                        ydiff = ymean - yy
-                        spatialdist = xdiff**2 + ydiff**2
-
-                        slicdist = colordist + invwt * spatialdist
+                        if compactness!=0:
+                            xmean = kx[k] / ksize[k]
+                            ymean = ky[k] / ksize[k]
+                            xdiff = xmean - xx
+                            ydiff = ymean - yy
+                            spatialdist = xdiff**2 + ydiff**2
+                            slicdist = colordist + invwt * spatialdist
+                        else:
+                            slicdist = colordist
                         heap.insert((xx,yy,k), slicdist)
 
     SPs = [[] for _ in range(numk)]

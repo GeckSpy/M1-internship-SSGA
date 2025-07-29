@@ -509,23 +509,36 @@ def multilevelSPsegmentation(data :np.ndarray, K:int,
 
 
 ### Merge-SP algorithm
-def globalSPsMerge(
-        data :np.ndarray,
-        SPs: list[list[tuple[int,int]]],
-        n_component :int=0,
-        usedVarFun=anovaFtest,
-        dist=norm1_similarity,
-        compare_comp=False,
-        weighted_avg :bool=False,
-        info_time:bool = False):
+def globalSPsMerge(data :np.ndarray,
+                   SPs: list[list[tuple[int,int]]],
+                   K :int, 
+                   n_component :int=0, 
+                   usedVarFun=anovaFtest,
+                   dist=norm1_similarity,
+                   compare_comp=False,
+                   weighted_avg :bool=False,
+                   info_time:bool = False):
     
     starting_time = time.time() if info_time else None
     if n_component==0 and compare_comp:
         raise ValueError("Cannot compare PCA component for <=0 components")
     
-    neighboors = [set([j for j in range(len(SPs)) if j>i]) for i in range(len(SPs))]
+    N,M = data.shape[:2]
+    SPs_or = [[coor for coor in SP] for SP in SPs_or]
 
-    return merge_SPs(SPs, neighboors, data, nb_classes,
+    pixelToSP = np.zeros((N,M), dtype=int)
+    for k,SP in enumerate(SPs_or):
+        for x,y in SP:
+            pixelToSP[x,y] = k
+
+    neighboors = [set() for _ in range(len(SPs_or))]
+    borders = find_borders(SPs_or, (N,M), exterior=True)
+    for k1 in range(len(borders)):
+        for x,y in borders[k1]:
+            k2 = pixelToSP[x,y]
+            neighboors[k1].add(k2)
+
+    return merge_SPs(SPs_or, neighboors, data, K,
                n_component=n_component, varFun=usedVarFun,
                compare_comp=compare_comp, dist=dist, weighted_avg=weighted_avg,
                starting_time=starting_time)
