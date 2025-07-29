@@ -3,7 +3,8 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from classes import MinHeap
-from EntropyRateSuperpixel import find_superpixel, norm1_similarity, find_borders
+from EntropyRateSuperpixel import find_superpixel, norm1_similarity, norm2_similarity, find_borders 
+from SNIC import mySNIC
 
 
 ### Toolbox function
@@ -222,11 +223,14 @@ def computeKor(N:int, M:int, n_component:int=0,
     return int(N*M/choosen_max)
 
 
-def computeMergeBasedInfo(data:np.ndarray, n_component:int=0):
+def computeMergeBasedInfo(data:np.ndarray, n_component:int=0, method="ERS"):
     N,M = data.shape[0], data.shape[1]
     K_or = computeKor(N,M, n_component=n_component)
 
-    SPs_or = find_superpixel(data, K_or, lambda_coef="auto", simFun="norm1")
+    if method=="ERS":
+        SPs_or = find_superpixel(data, K_or, lambda_coef="auto", simFun="norm1")
+    elif method=="SNIC":
+        SPs_or = mySNIC(data, K_or, shape="hexagon", simFun=norm2_similarity)
     pixelToSP = np.zeros((N,M), dtype=int)
     for k,SP in enumerate(SPs_or):
         for x,y in SP:
@@ -542,3 +546,5 @@ def globalSPsMerge(data :np.ndarray,
                n_component=n_component, varFun=usedVarFun,
                compare_comp=compare_comp, dist=dist, weighted_avg=weighted_avg,
                starting_time=starting_time)
+
+
