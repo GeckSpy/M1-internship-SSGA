@@ -9,7 +9,8 @@ from classes import MinHeap
 
 
 # SLIC algorithm
-def SLIC(data, K, compactness=10):
+def SLIC(data:np.ndarray, K:int, compactness:float=10)->list[list[tuple[int,int]]]:
+    # The classic SLIC algorithm with the used Supepixel Segmentation format
     n,m = data.shape[:2]
     segments = slic(img_as_float(data), n_segments=K, compactness=compactness, start_label=0)
     SPs = [[] for _ in range(np.max(segments)+1)]
@@ -20,7 +21,7 @@ def SLIC(data, K, compactness=10):
 
 
 # SNIC algorithm
-def rgb_to_lab_image(img):
+def rgb_to_lab_image(img:np.ndarray):
     """
     Converts an RGB image to LAB using skimage.
     Expects image as numpy array with shape (H, W, 3), dtype uint8.
@@ -31,7 +32,10 @@ def rgb_to_lab_image(img):
 
 
 ### Seeds functions
-def find_suare_seeds(width, height, numk):
+def find_square_seeds(width:int, height:int, numk:int)->tuple[int, list[int], list[int]]:
+    """
+    Return the seeds with the classic SNIC seeds algorithm
+    """
     sz = width * height
     gridstep = int(np.sqrt(sz / numk) + 0.5)
     halfstep = gridstep // 2
@@ -56,7 +60,10 @@ def find_suare_seeds(width, height, numk):
     return numk, kx, ky
 
 
-def find_hexagonal_seeds(height, width, K):
+def find_hexagonal_seeds(height:int, width:int, K:int)->tuple[int, list[int], list[int]]:
+    """
+    Return the seeds using hexagonal image splitting
+    """
     hex_area = (height * width) / K
     r = np.sqrt((2 * hex_area) / (3 * np.sqrt(3)))
 
@@ -79,9 +86,9 @@ def find_hexagonal_seeds(height, width, K):
     return len(kx), kx, ky
 
 
-def find_seeds(N,M,K, shape="square"):
+def find_seeds(N:int, M:int, K:int, shape="square")->tuple[int, list[int], list[int]]:
     if shape=="square":
-        return find_suare_seeds(N,M,K)
+        return find_square_seeds(N,M,K)
     elif shape=="hexagon":
         return find_hexagonal_seeds(N,M,K)
     else:
@@ -89,7 +96,16 @@ def find_seeds(N,M,K, shape="square"):
 
 
 ### main function
-def run_snic(lv, av, bv, width, height, innumk, compactness, shape="square"):
+def run_snic(lv:np.ndarray,
+             av:np.ndarray,
+             bv:np.ndarray,
+             width:int, height:int, innumk:int,
+             compactness:float,
+             shape:str="square"
+             )->tuple[np.ndarray, int]:
+    """
+    Run the classic SNIC algorithm
+    """
     sz = width * height
     dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
     dy8 = [0, -1, 0, 1, -1, -1, 1, 1]
@@ -172,8 +188,7 @@ def run_snic(lv, av, bv, width, height, innumk, compactness, shape="square"):
 
 
 
-
-def SNIC(image, num_superpixels=100, compactness=10.0, shape="square"):
+def SNIC(image:np.ndarray, num_superpixels:int=100, compactness:float=10.0, shape="square"):
     """
     Main interface for SNIC segmentation.
     
@@ -203,8 +218,11 @@ def SNIC(image, num_superpixels=100, compactness=10.0, shape="square"):
 
 
 # My SNIC
-### main function
-def myRBGSNIC(data, K, compactness, shape="square"):
+### classic SNIC algorithm (made for RBG images)
+def myRBGSNIC(data:np.ndarray, K:int, compactness:int=0, shape="square")->list[list[tuple[int,int]]]:
+    """
+    The classic SNIC algorithm using more understandable code
+    """
     height, width = data.shape[:2]
     sz = width * height
     dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
@@ -275,8 +293,15 @@ def myRBGSNIC(data, K, compactness, shape="square"):
     return SPs
 
 
-
-def mySNIC(data, K, compactness=0, shape="square", simFun=norm2_similarity):
+### proposed SNIC algorithm (made for gray-scale, RBG, and Hyperspectral images)
+def mySNIC(data:np.ndarray, K:int,
+           compactness:float=0,
+           shape="square",
+           simFun=norm2_similarity
+           )->list[list[tuple[int,int]]]:
+    """
+    The proposed SNIC improvment algorithm for more images type, designed for hyperspectral images
+    """
     height, width, B = data.shape
     sz = width * height
     dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
