@@ -4,7 +4,8 @@ from skimage import color
 
 from skimage.segmentation import slic
 from skimage.util import img_as_float
-from EntropyRateSuperpixel import norm1_similarity
+from EntropyRateSuperpixel import norm1_similarity, norm2_similarity
+from classes import MinHeap
 
 
 # SLIC algorithm
@@ -172,7 +173,7 @@ def run_snic(lv, av, bv, width, height, innumk, compactness, shape="square"):
 
 
 
-def snic_segmentation(image, num_superpixels=100, compactness=10.0, shape="square"):
+def SNIC(image, num_superpixels=100, compactness=10.0, shape="square"):
     """
     Main interface for SNIC segmentation.
     
@@ -200,3 +201,137 @@ def snic_segmentation(image, num_superpixels=100, compactness=10.0, shape="squar
 
     return SPs
 
+
+# My SNIC
+### main function
+def myRBGSNIC(data, K, compactness, shape="square"):
+    height, width = data.shape[:2]
+    sz = width * height
+    dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
+    dy8 = [0, -1, 0, 1, -1, -1, 1, 1]
+    
+    numk, cx, cy = find_seeds(width, height, K, shape=shape)
+    labels = -1 * np.ones((height, width), dtype=int)
+
+    kl = np.zeros(numk)
+    ka = np.zeros(numk)
+    kb = np.zeros(numk)
+    kx = np.zeros(numk)
+    ky = np.zeros(numk)
+    ksize = np.zeros(numk)
+
+    # Priority queue
+    heap = MinHeap()
+    for k in range(numk):
+        heap.insert((cx[k], cy[k], k), 0)
+
+    CONNECTIVITY = 4
+    #CONNECTIVITY = 8
+    M = compactness
+    invwt = (M * M * numk) / float(sz)
+
+    while not heap.isEmpty():
+        (x,y,k),_ = heap.pop()
+
+        if labels[x,y] < 0:
+            labels[x,y] = k
+
+            kl[k] += data[x,y,0]
+            ka[k] += data[x,y,1]
+            kb[k] += data[x,y,2]
+
+            kx[k] += x
+            ky[k] += y
+            ksize[k] += 1.0
+
+            for p in range(CONNECTIVITY):
+                xx = x + dx8[p]
+                yy = y + dy8[p]
+                if 0 <= xx < width and 0 <= yy < height:
+                    if labels[xx,yy]<0:
+                        lmean = kl[k] / ksize[k]
+                        amean = ka[k] / ksize[k]
+                        bmean = kb[k] / ksize[k]
+                        xmean = kx[k] / ksize[k]
+                        ymean = ky[k] / ksize[k]
+
+                        ldiff = lmean - data[xx,yy,0]
+                        adiff = amean - data[xx,yy,1]
+                        bdiff = bmean - data[xx,yy,2]
+
+                        xdiff = xmean - xx
+                        ydiff = ymean - yy
+
+                        colordist = ldiff**2 + adiff**2 + bdiff**2
+                        spatialdist = xdiff**2 + ydiff**2
+                        slicdist = colordist + invwt * spatialdist
+
+                        heap.insert((xx,yy,k), slicdist)
+
+    SPs = [[] for _ in range(numk)]
+    for i in range(height):
+        for j in range(width):
+            SPs[labels[i,j]].append((i,j))
+    return SPs
+
+
+
+def mySNIC(data, K, compactness, shape="square", simFun=norm2_similarity):
+    height, width, B = data.shape
+    sz = width * height
+    dx8 = [-1, 0, 1, 0, -1, 1, 1, -1]
+    dy8 = [0, -1, 0, 1, -1, -1, 1, 1]
+    
+    numk, cx, cy = find_seeds(width, height, K, shape=shape)
+    labels = -1 * np.ones((height, width), dtype=int)
+
+    ks = np.zeros((numk, B))
+    kx = np.zeros(numk)
+    ky = np.zeros(numk)
+    ksize = np.zeros(numk)
+
+    # Priority queue
+    heap = MinHeap()
+    for k in range(numk):
+        heap.insert((cx[k], cy[k], k), 0)
+
+    CONNECTIVITY = 4
+    #CONNECTIVITY = 8
+    M = compactness
+    invwt = (M * M * numk) / float(sz)
+
+    while not heap.isEmpty():
+        (x,y,k),_ = heap.pop()
+
+        if labels[x,y] < 0:
+            labels[x,y] = k
+
+            for b in range(B):
+                ks[k][b] += data[x,y,b]
+
+            kx[k] += x
+            ky[k] += y
+            ksize[k] += 1.0
+
+            for p in range(CONNECTIVITY):
+                xx = x + dx8[p]
+                yy = y + dy8[p]
+                if 0 <= xx < width and 0 <= yy < height:
+                    if labels[xx,yy]<0:
+                        means = np.array([ks[k][b]/ksize[k] for b in range(B)])
+                        colordist = simFun(means, data[xx,yy,:])
+
+                        xmean = kx[k] / ksize[k]
+                        ymean = ky[k] / ksize[k]
+                        xdiff = xmean - xx
+                        ydiff = ymean - yy
+                        spatialdist = xdiff**2 + ydiff**2
+
+                        slicdist = colordist + invwt * spatialdist
+                        heap.insert((xx,yy,k), slicdist)
+
+    SPs = [[] for _ in range(numk)]
+    for i in range(height):
+        for j in range(width):
+            SPs[labels[i,j]].append((i,j))
+    return SPs
