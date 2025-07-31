@@ -278,7 +278,6 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
     TSs = [[trainData[coor] for coor in SP] for SP in SPs]
     averages = compute_averages(TSs, dtc=None)
 
-
     def simFun(k1, k2, n_component=n_component, compare_comp=compare_comp):
         dtc = [center_distances(SP) for SP in [SPs[k1], SPs[k2]]] if weighted_avg else None
         if n_component==0:
@@ -326,23 +325,42 @@ def merge_SPs(SPs_or :list[list[tuple[int,int]]],
     SPsDic = {K:[] for K in Ks}
     for K in Ks:
         while nb_cc > K and len(edges)>0:
-            k1,k2,_ = edges.pop(0)
+            k1,k2,_ = edges[0]
             if existing[k1] and existing[k2]:
                 existing[k2] = False
                 SPs[k1] += SPs[k2]
                 TSs[k1] += TSs[k2]
                 averages[k1] = np.average(TSs[k1], axis=0)
-                
+
                 SPs[k2] = None
-                neighboors[k1] = neighboors[k1].union(neighboors[k2])
+                for k in neighboors[k2]:
+                    if existing[k]:
+                        neighboors[k] = neighboors[k] - set([k2]) 
+                        neighboors[k].add(k1)
+                neighboors[k1] = set([x for x in neighboors[k1].union(neighboors[k2]) if x!=k1 and x!=k2 and existing[x]])
                 neighboors[k2] = None
 
-                edges = [(u,v,w) for u,v,w in edges if u!=k1 and v!=k2 and u!=k2 and v!=k1 and existing[u] and existing[v]]
+
+                new_edges = []
+                for u,v,w in edges:
+                    if u==k1 or u==k2 or v==k1 or v==k2:
+                        pass
+                    elif existing[u] and existing[v]:
+                        new_edges.append((u,v,w))
+                edges = new_edges
+
+
                 for v in neighboors[k1]:
-                    if v!=k1 and existing[v]:
-                        insert_sorted(edges, (k1,v, simFun(k1, v)))
-                
+                    sf = simFun(k1,v)
+                    insert_sorted(edges, (k1,v, sf))
+
+
                 nb_cc -=1
+
+            else:
+                print("ERROR")
+                assert False
+
         SPsDic[K] = [[coor for coor in SP] for i,SP in enumerate(SPs) if existing[i]]
         if starting_time!=None:
             dic_time[K] = time.time() - starting_time
