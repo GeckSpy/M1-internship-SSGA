@@ -202,7 +202,7 @@ def stdFtestnorm1(clusters:list, dist=(1,""), dtc=None, averages=None):
 ### Merged-Based Neighborhood algorithm
 from scipy.optimize import root_scalar
 def computeKor(N:int, M:int, n_component:int=0,
-               P_avg:float=35, gamma:float=0.15)->int:
+               P_avg:float=25, gamma:float=0.15)->int:
     if n_component==0:
         return int(N*M/P_avg)
 
