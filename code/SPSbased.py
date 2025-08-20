@@ -4,7 +4,7 @@ from sklearn.decomposition import PCA
 
 from classes import MinHeap
 from EntropyRateSuperpixel import find_superpixel, norm1_similarity, norm2_similarity, find_borders 
-from SNIC import mySNIC
+from SLIGbased import mySNIC
 
 
 ### Toolbox function
