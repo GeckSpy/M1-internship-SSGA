@@ -444,5 +444,4 @@ def SMCSF(data, K):
     trainData = normalized_data(data)
     infos = computeMergeBasedInfo(trainData)
     SPs_or, neighboors = infos
-
     return merge_SPs(SPs_or, neighboors, trainData, K)
