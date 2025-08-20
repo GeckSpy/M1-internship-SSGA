@@ -546,7 +546,7 @@ def globalSPsMerge(data :np.ndarray,
         raise ValueError("Cannot compare PCA component for <=0 components")
     
     N,M = data.shape[:2]
-    SPs_or = [[coor for coor in SP] for SP in SPs_or]
+    SPs_or = [[coor for coor in SP] for SP in SPs]
 
     pixelToSP = np.zeros((N,M), dtype=int)
     for k,SP in enumerate(SPs_or):
